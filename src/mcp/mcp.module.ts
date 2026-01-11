@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { McpModule } from '@rekog/mcp-nest';
+import { RutrackerTool } from './rutracker.tool';
+import { RutrackerModule } from '../rutracker/rutracker.module';
 import { ConfigModule } from '../config';
 import { PlexTool } from './plex.tool';
 import { PlexModule } from '../plex/plex.module';
@@ -10,13 +12,14 @@ import { TmdbTool } from './tmdb.tool';
   imports: [
     ConfigModule,
     McpModule.forRoot({
-      name: 'media-mcp-server',
+      name: 'rutracker-mcp-server',
       version: '1.0.0',
     }),
+    RutrackerModule,
     PlexModule,
     TmdbModule,
   ],
-  providers: [PlexTool, TmdbTool],
+  providers: [RutrackerTool, PlexTool, TmdbTool],
   exports: [McpModule],
 })
 export class McpServerModule {}

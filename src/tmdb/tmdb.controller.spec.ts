@@ -53,7 +53,7 @@ describe('TmdbController', () => {
       const result = await controller.getSeasonInfo('ThisShowDefinitelyDoesNotExist12345', 1);
 
       expect(result).toHaveProperty('error');
-      expect(result.error).toContain('Failed to get season info');
+      expect(result.error).toContain('not found in TMDB');
     });
 
     it('should handle invalid season number for existing show', async () => {
