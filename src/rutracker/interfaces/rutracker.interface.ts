@@ -34,6 +34,7 @@ export interface TorrentSearchResult {
   pubDate: number;
   downloadLink: string;
   topicLink: string;
+  forum: string;
 }
 
 /**

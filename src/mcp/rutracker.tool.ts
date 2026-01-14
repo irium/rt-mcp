@@ -49,7 +49,7 @@ export class RutrackerTool {
         .map(result => {
           const sizeInMegabytes = Math.ceil(result.size / 1024 / 1024);
           const etaInMinutes = Math.ceil(sizeInMegabytes / (this.ETA_SPEED / 8) / 60);
-          const pubDateHuman = new Date(result.pubDate * 1000).toLocaleString();
+          const pubDateHuman = new Date(result.pubDate * 1000).toISOString();
 
           return {
             id: result.id,
@@ -59,6 +59,8 @@ export class RutrackerTool {
             seeders: result.seeders,
             leechers: result.leechers,
             pubDate: pubDateHuman,
+            forum: result.forum,
+            downloadLink: result.downloadLink,
           };
         });
 

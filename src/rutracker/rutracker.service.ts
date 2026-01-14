@@ -281,11 +281,11 @@ export class RutrackerService extends BaseTorrentTrackerService {
 
     // Use regex to extract torrent information
     const regex =
-      /<a\sdata-topic_id="(\d+?)".+?>(.+?)<\/a.+?tor-size"\sdata-ts_text="(\d+?)">.+?data-ts_text="([-\d]+?)">.+?Личи">(\d+?)<\/.+?data-ts_text="(\d+?)">/gs;
+      /f-name"><a\s.+?>(.+?)<\/a>.+?<a\sdata-topic_id="(\d+?)".+?>(.+?)<\/a.+?tor-size"\sdata-ts_text="(\d+?)">.+?data-ts_text="([-\d]+?)">.+?Личи">(\d+?)<\/.+?data-ts_text="(\d+?)">/gs;
 
     let match;
     while ((match = regex.exec(html)) !== null) {
-      const [, id, name, size, seedersStr, leechers, pubDateStr] = match;
+      const [, forum, id, name, size, seedersStr, leechers, pubDateStr] = match;
 
       // Some entries might have negative seeders indicating issues, so we handle that
       const seeders = Math.max(0, parseInt(seedersStr, 10));
@@ -299,6 +299,7 @@ export class RutrackerService extends BaseTorrentTrackerService {
         pubDate: parseInt(pubDateStr, 10),
         downloadLink: `${this.baseUrl}dl.php?t=${id}`,
         topicLink: `${this.baseUrl}viewtopic.php?t=${id}`,
+        forum: this.decodeHtmlEntities(forum),
       };
 
       results.push(result);
