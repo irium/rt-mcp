@@ -157,7 +157,7 @@ function displayResults(results) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td class="torrent-name">${escapeHtml(result.name)}</td>
-            <td>${result.size}</td>
+            <td data-size="${result.size}">${formatSize(result.size)}</td>
             <td>${result.seeders}</td>
             <td>${result.leechers}</td>
             <td>${escapeHtml(result.forum)}</td>
@@ -460,6 +460,14 @@ function replaySearch(item) {
     document.getElementById('year').value = item.year || '';
     document.getElementById('season').value = item.season || '';
     document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+}
+
+// Format size in MB to human-readable format
+function formatSize(sizeInMB) {
+    if (sizeInMB >= 1024) {
+        return parseFloat((sizeInMB / 1024).toFixed(2)) + ' GB';
+    }
+    return parseFloat(sizeInMB.toFixed(2)) + ' MB';
 }
 
 // Escape HTML to prevent XSS
