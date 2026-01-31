@@ -5,10 +5,14 @@ const API_BASE = '/api/rutracker';
 let searchResults = [];
 let currentSort = { field: null, ascending: true };
 
+// Search History
+const MAX_HISTORY_ITEMS = 10;
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     checkStatus();
     setupEventListeners();
+    renderSearchHistory();
 });
 
 // Setup event listeners
@@ -85,6 +89,9 @@ async function handleSearch(e) {
         const results = await response.json();
         searchResults = results;
         displayResults(results);
+        
+        // Save to history after successful search
+        saveToHistory({ title, year, season });
         
         // Update status after successful search
         checkStatus();
@@ -297,6 +304,104 @@ function showToast(message, type = 'success') {
     setTimeout(() => {
         toast.classList.remove('show');
     }, 3000);
+}
+
+// Search History Management
+function saveToHistory(query) {
+    const history = getSearchHistory();
+    
+    // Create history item
+    const item = {
+        id: Date.now(),
+        title: query.title,
+        year: query.year,
+        season: query.season,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Remove duplicates (same title+year+season)
+    const filtered = history.filter(h => 
+        !(h.title === item.title && h.year === item.year && h.season === item.season)
+    );
+    
+    // Add new item at the beginning
+    filtered.unshift(item);
+    
+    // Keep only MAX_HISTORY_ITEMS
+    const trimmed = filtered.slice(0, MAX_HISTORY_ITEMS);
+    
+    // Save to localStorage
+    localStorage.setItem('searchHistory', JSON.stringify(trimmed));
+    
+    // Update UI
+    renderSearchHistory();
+}
+
+function getSearchHistory() {
+    try {
+        const history = localStorage.getItem('searchHistory');
+        return history ? JSON.parse(history) : [];
+    } catch (error) {
+        console.error('Error reading search history:', error);
+        return [];
+    }
+}
+
+function deleteHistoryItem(id) {
+    const history = getSearchHistory();
+    const filtered = history.filter(item => item.id !== id);
+    localStorage.setItem('searchHistory', JSON.stringify(filtered));
+    renderSearchHistory();
+    showToast('History item removed', 'success');
+}
+
+function clearHistory() {
+    if (confirm('Clear all search history?')) {
+        localStorage.removeItem('searchHistory');
+        renderSearchHistory();
+        showToast('History cleared', 'success');
+    }
+}
+
+function renderSearchHistory() {
+    const history = getSearchHistory();
+    const container = document.getElementById('searchHistory');
+    
+    if (!container) return;
+    
+    if (history.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    container.innerHTML = `
+        <div class="history-header">
+            <span class="history-title">Recent Searches</span>
+            <button class="btn-link" onclick="clearHistory()">Clear All</button>
+        </div>
+        <div class="history-items">
+            ${history.map(item => `
+                <div class="history-chip" onclick='replaySearch(${JSON.stringify(item).replace(/'/g, "&apos;")})' title="Click to search again">
+                    <span class="history-text">
+                        ${escapeHtml(item.title)}
+                        ${item.year ? `<span class="history-meta">${escapeHtml(item.year)}</span>` : ''}
+                        ${item.season ? `<span class="history-meta">S${escapeHtml(item.season)}</span>` : ''}
+                    </span>
+                    <button class="history-remove" onclick="event.stopPropagation(); deleteHistoryItem(${item.id})" title="Remove">
+                        ×
+                    </button>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function replaySearch(item) {
+    document.getElementById('title').value = item.title;
+    document.getElementById('year').value = item.year || '';
+    document.getElementById('season').value = item.season || '';
+    document.getElementById('searchForm').dispatchEvent(new Event('submit'));
 }
 
 // Escape HTML to prevent XSS
