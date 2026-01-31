@@ -7,7 +7,7 @@
 
 This document outlines the implementation plan for the next set of WebUI enhancements:
 1. Search History (localStorage-based)
-2. Category/Forum Filter
+2. HD Video Filter (simple toggle)
 3. Pagination
 4. Dark Theme + Theme Switcher
 
@@ -304,149 +304,67 @@ Add after search form, before results section:
 
 ---
 
-## Feature 2: Category/Forum Filter 🎯
+## Feature 2: HD Video Filter 🎯
 
 ### Objective
-Allow users to filter results by RuTracker forum categories (Movies, TV Shows, Music, etc.)
+Allow users to filter results to show only HD quality torrents (titles containing "HD Video").
 
 ### Technical Approach
-- Add multi-select dropdown for forum categories
+- Add a simple toggle switch for "HD Video only" filter
 - Filter results on frontend (already fetched)
-- Display active filters as removable chips
-- Persist selected filters in localStorage
+- Check if torrent name contains "HD Video" substring
+- Persist filter state in localStorage
 
 ### Implementation Details
 
-#### 2.1 Backend Changes
-
-**File: [src/rutracker/rutracker.controller.ts](../src/rutracker/rutracker.controller.ts)**
-
-Add new endpoint to get available forums:
-
-```typescript
-@Get('forums')
-async getForums() {
-  // Return common RuTracker forum categories
-  return {
-    forums: [
-      { id: 'all', name: 'All Categories', icon: '🌐' },
-      { id: '2090', name: 'Movies (HD)', icon: '🎬' },
-      { id: '2221', name: 'TV Shows (HD)', icon: '📺' },
-      { id: '934', name: 'Foreign Movies', icon: '🎞️' },
-      { id: '842', name: 'TV Series', icon: '📼' },
-      { id: '2076', name: 'Documentary', icon: '🎥' },
-      { id: '1576', name: 'Anime', icon: '🎌' },
-      { id: '209', name: 'Music', icon: '🎵' },
-    ]
-  };
-}
-```
-
-#### 2.2 Frontend Changes
+#### 2.1 Frontend Changes (No Backend Changes Needed)
 
 **File: [public/app.js](../public/app.js)**
 
 ```javascript
 // Add to state
-let activeFilters = {
-    forums: [],
-    minSeeders: 0,
-    maxSize: null
-};
+let hdVideoFilter = false;
 
 // New functions
-async function loadForumsList() {
-    try {
-        const response = await fetch(`${API_BASE}/forums`);
-        const data = await response.json();
-        renderForumsFilter(data.forums);
-    } catch (error) {
-        console.error('Failed to load forums:', error);
-    }
-}
-
-function renderForumsFilter(forums) {
-    const container = document.getElementById('forumsFilter');
-    container.innerHTML = `
-        <div class="filter-dropdown">
-            <button class="filter-btn" onclick="toggleForumDropdown()">
-                <span>📁 Categories</span>
-                ${activeFilters.forums.length > 0 ? `<span class="badge">${activeFilters.forums.length}</span>` : ''}
-            </button>
-            <div class="dropdown-menu" id="forumDropdown" style="display: none;">
-                ${forums.map(forum => `
-                    <label class="dropdown-item">
-                        <input type="checkbox" value="${forum.id}" 
-                            ${activeFilters.forums.includes(forum.id) ? 'checked' : ''}
-                            onchange="toggleForumFilter('${forum.id}')">
-                        <span>${forum.icon} ${forum.name}</span>
-                    </label>
-                `).join('')}
-            </div>
-        </div>
-    `;
-}
-
-function toggleForumDropdown() {
-    const dropdown = document.getElementById('forumDropdown');
-    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-}
-
-function toggleForumFilter(forumId) {
-    if (forumId === 'all') {
-        activeFilters.forums = [];
-    } else {
-        const index = activeFilters.forums.indexOf(forumId);
-        if (index > -1) {
-            activeFilters.forums.splice(index, 1);
-        } else {
-            activeFilters.forums.push(forumId);
-        }
-    }
+function toggleHDFilter() {
+    hdVideoFilter = !hdVideoFilter;
     
     // Save to localStorage
-    localStorage.setItem('activeFilters', JSON.stringify(activeFilters));
+    localStorage.setItem('hdVideoFilter', JSON.stringify(hdVideoFilter));
     
-    // Re-render with filters
+    // Update UI
+    updateHDFilterButton();
+    
+    // Re-render with filter
     displayResults(searchResults);
-    renderActiveFilters();
 }
 
-function renderActiveFilters() {
-    const container = document.getElementById('activeFilters');
+function updateHDFilterButton() {
+    const button = document.getElementById('hdFilterBtn');
+    const icon = document.getElementById('hdFilterIcon');
+    const text = document.getElementById('hdFilterText');
     
-    if (activeFilters.forums.length === 0 && !activeFilters.minSeeders) {
-        container.style.display = 'none';
-        return;
+    if (!button) return;
+    
+    if (hdVideoFilter) {
+        button.classList.add('active');
+        icon.textContent = '✓';
+        text.textContent = 'HD Video Only';
+    } else {
+        button.classList.remove('active');
+        icon.textContent = '🎬';
+        text.textContent = 'All Quality';
     }
-    
-    container.style.display = 'flex';
-    container.innerHTML = activeFilters.forums.map(forumId => `
-        <span class="filter-chip">
-            ${forumId}
-            <button onclick="toggleForumFilter('${forumId}')">×</button>
-        </span>
-    `).join('');
 }
 
 function applyFilters(results) {
     let filtered = [...results];
     
-    // Forum filter
-    if (activeFilters.forums.length > 0) {
+    // HD Video filter
+    if (hdVideoFilter) {
         filtered = filtered.filter(r => 
-            activeFilters.forums.some(f => r.forum.includes(f))
+            r.name.includes('HD Video') || r.name.includes('HD Видео')
         );
-    }
-    
-    // Seeders filter
-    if (activeFilters.minSeeders > 0) {
-        filtered = filtered.filter(r => r.seeders >= activeFilters.minSeeders);
-    }
-    
-    // Size filter
-    if (activeFilters.maxSize) {
-        filtered = filtered.filter(r => r.size <= activeFilters.maxSize);
     }
     
     return filtered;
@@ -466,41 +384,48 @@ function displayResults(results) {
         emptyState.style.display = 'block';
         emptyState.querySelector('p').textContent = 
             results.length > 0 
-                ? `No results match the selected filters (${results.length} total results)`
+                ? `No HD Video results found (${results.length} total results)`
                 : 'No results found. Try a different search.';
         return;
     }
 
-    // ... rest of existing code, but use 'filtered' instead of 'results' ...
+    emptyState.style.display = 'none';
+    resultsSection.style.display = 'block';
+
+    // Update count text
     resultsCount.textContent = 
         filtered.length === results.length 
             ? `${filtered.length} results found`
-            : `${filtered.length} of ${results.length} results`;
+            : `${filtered.length} of ${results.length} results (HD Video only)`;
+
+    // ... rest of existing code, but use 'filtered' instead of 'results' ...
 }
 
-// Load filters from localStorage on init
+// Load filter from localStorage on init
 document.addEventListener('DOMContentLoaded', () => {
     checkStatus();
     setupEventListeners();
     renderSearchHistory();
-    loadForumsList(); // **NEW**
     
-    // Load saved filters
-    const saved = localStorage.getItem('activeFilters');
-    if (saved) {
-        activeFilters = JSON.parse(saved);
+    // Load saved HD filter
+    const savedHDFilter = localStorage.getItem('hdVideoFilter');
+    if (savedHDFilter) {
+        hdVideoFilter = JSON.parse(savedHDFilter);
+        updateHDFilterButton();
     }
 });
 ```
 
 **File: [public/index.html](../public/index.html)**
 
-Add after search form:
+Add after search history section, before results:
 
 ```html
 <div class="filters-section">
-    <div id="forumsFilter"></div>
-    <div id="activeFilters" class="active-filters" style="display: none;"></div>
+    <button class="filter-toggle-btn" id="hdFilterBtn" onclick="toggleHDFilter()">
+        <span class="filter-icon" id="hdFilterIcon">🎬</span>
+        <span id="hdFilterText">All Quality</span>
+    </button>
 </div>
 ```
 
@@ -514,103 +439,44 @@ Add after search form:
     border-radius: 0.75rem;
     box-shadow: var(--shadow);
     margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
-.filter-dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.filter-btn {
+.filter-toggle-btn {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.625rem 1rem;
     background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    border: 2px solid var(--border-color);
     border-radius: 0.5rem;
     cursor: pointer;
     font-size: 0.875rem;
+    font-weight: 500;
     transition: all 0.2s;
+    color: var(--text-primary);
 }
 
-.filter-btn:hover {
-    background: var(--border-color);
-}
-
-.filter-btn .badge {
-    background: var(--primary-color);
-    color: white;
-    padding: 0.125rem 0.5rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.dropdown-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 0.5rem;
+.filter-toggle-btn:hover {
+    border-color: var(--primary-color);
     background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 0.5rem;
-    box-shadow: var(--shadow-lg);
-    min-width: 250px;
-    max-height: 400px;
-    overflow-y: auto;
-    z-index: 100;
 }
 
-.dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    cursor: pointer;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.dropdown-item:last-child {
-    border-bottom: none;
-}
-
-.dropdown-item:hover {
-    background: var(--bg-secondary);
-}
-
-.dropdown-item input[type="checkbox"] {
-    cursor: pointer;
-}
-
-.active-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
-}
-
-.filter-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
+.filter-toggle-btn.active {
     background: var(--primary-color);
+    border-color: var(--primary-color);
     color: white;
-    padding: 0.375rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.875rem;
 }
 
-.filter-chip button {
-    background: none;
-    border: none;
-    color: white;
-    cursor: pointer;
+.filter-toggle-btn.active:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.filter-icon {
     font-size: 1.125rem;
-    line-height: 1;
-    padding: 0;
 }
 ```
 
@@ -1023,8 +889,8 @@ Update header section:
 2. **Search History** - Enhances UX without dependencies
 
 ### Phase 2: Data Management (Day 2)
-3. **Pagination** - Improves performance with large result sets
-4. **Category Filter** - Builds on pagination structure
+3. **HD Video Filter** - Simple toggle for quality filtering
+4. **Pagination** - Improves performance with large result sets
 
 ### Testing Checklist
 - [ ] Search history persists across browser sessions
@@ -1033,10 +899,10 @@ Update header section:
 - [ ] Theme preference persists across sessions
 - [ ] Theme respects system preference on first load
 - [ ] Dark theme has proper contrast ratios (WCAG AA)
+- [ ] HD Video filter persists across sessions
+- [ ] HD Video filter correctly identifies HD content
 - [ ] Pagination works with filtered results
 - [ ] Pagination resets to page 1 on new search
-- [ ] Category filter updates result count correctly
-- [ ] Multiple filters can be applied simultaneously
 
 ---
 
@@ -1045,10 +911,10 @@ Update header section:
 | Feature | Coding | Testing | Total |
 |---------|--------|---------|-------|
 | Search History | 2h | 0.5h | 2.5h |
-| Category Filter | 3h | 1h | 4h |
+| HD Video Filter | 1h | 0.25h | 1.25h |
 | Pagination | 2h | 0.5h | 2.5h |
 | Dark Theme | 1.5h | 0.5h | 2h |
-| **TOTAL** | **8.5h** | **2.5h** | **11h** |
+| **TOTAL** | **6.5h** | **1.75h** | **8.25h** |
 
 ---
 
@@ -1067,10 +933,11 @@ Update header section:
 ## Notes
 
 - All features use **localStorage** for persistence
-- No backend changes needed (except forum list endpoint)
+- **No backend changes needed** - all features are frontend-only
 - All enhancements are **progressive** - can be implemented independently
 - **Mobile-first** approach maintained throughout
 - Features gracefully degrade if localStorage unavailable
+- HD Video filter checks for "HD Video" or "HD Видео" (Russian) in torrent names
 
 ---
 

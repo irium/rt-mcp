@@ -8,11 +8,21 @@ let currentSort = { field: null, ascending: true };
 // Search History
 const MAX_HISTORY_ITEMS = 10;
 
+// HD Video Filter
+let hdVideoFilter = false;
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     checkStatus();
     setupEventListeners();
     renderSearchHistory();
+    
+    // Load saved HD filter
+    const savedHDFilter = localStorage.getItem('hdVideoFilter');
+    if (savedHDFilter) {
+        hdVideoFilter = JSON.parse(savedHDFilter);
+        updateHDFilterButton();
+    }
 });
 
 // Setup event listeners
@@ -108,28 +118,42 @@ async function handleSearch(e) {
 
 // Display search results
 function displayResults(results) {
+    // Apply HD filter
+    let filtered = results;
+    if (hdVideoFilter) {
+        filtered = results.filter(r => 
+            r.forum.includes('HD Video') || r.forum.includes('HD Видео')
+        );
+    }
+    
     const resultsSection = document.getElementById('resultsSection');
     const emptyState = document.getElementById('emptyState');
     const resultsBody = document.getElementById('resultsBody');
     const resultsCount = document.getElementById('resultsCount');
 
-    if (results.length === 0) {
+    if (filtered.length === 0) {
         resultsSection.style.display = 'none';
         emptyState.style.display = 'block';
-        emptyState.querySelector('p').textContent = 'No results found. Try a different search.';
+        emptyState.querySelector('p').textContent = 
+            results.length > 0 
+                ? `No HD Video results found (${results.length} total results)`
+                : 'No results found. Try a different search.';
         return;
     }
 
     // Hide empty state and show results
     emptyState.style.display = 'none';
     resultsSection.style.display = 'block';
-    resultsCount.textContent = `${results.length} results found`;
+    resultsCount.textContent = 
+        filtered.length === results.length 
+            ? `${filtered.length} results found`
+            : `${filtered.length} of ${results.length} results (HD Video only)`;
 
     // Clear previous results
     resultsBody.innerHTML = '';
 
-    // Add results
-    results.forEach(result => {
+    // Add filtered results
+    filtered.forEach(result => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td class="torrent-name">${escapeHtml(result.name)}</td>
@@ -304,6 +328,40 @@ function showToast(message, type = 'success') {
     setTimeout(() => {
         toast.classList.remove('show');
     }, 3000);
+}
+
+// HD Video Filter Management
+function toggleHDFilter() {
+    hdVideoFilter = !hdVideoFilter;
+    
+    // Save to localStorage
+    localStorage.setItem('hdVideoFilter', JSON.stringify(hdVideoFilter));
+    
+    // Update UI
+    updateHDFilterButton();
+    
+    // Re-render with filter
+    if (searchResults.length > 0) {
+        displayResults(searchResults);
+    }
+}
+
+function updateHDFilterButton() {
+    const button = document.getElementById('hdFilterBtn');
+    const icon = document.getElementById('hdFilterIcon');
+    const text = document.getElementById('hdFilterText');
+    
+    if (!button) return;
+    
+    if (hdVideoFilter) {
+        button.classList.add('active');
+        icon.textContent = '✓';
+        text.textContent = 'HD Video Only';
+    } else {
+        button.classList.remove('active');
+        icon.textContent = '🎬';
+        text.textContent = 'All Quality';
+    }
 }
 
 // Search History Management
