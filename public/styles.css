@@ -1,3 +1,4 @@
+/* Light Theme (Default) */
 :root {
     --primary-color: #2563eb;
     --primary-hover: #1d4ed8;
@@ -7,15 +8,39 @@
     --text-secondary: #6b7280;
     --bg-primary: #ffffff;
     --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
     --border-color: #e5e7eb;
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
+/* Dark Theme */
+[data-theme="dark"] {
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --success-color: #10b981;
+    --danger-color: #f87171;
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
+    --bg-primary: #1f2937;
+    --bg-secondary: #111827;
+    --bg-tertiary: #0f172a;
+    --border-color: #374151;
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+/* Smooth transitions for theme changes */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Prevent slow transitions on buttons and interactive elements */
+button, input, .btn, .loader {
+    transition: all 0.2s ease !important;
 }
 
 body {
@@ -43,6 +68,12 @@ header {
 h1 {
     font-size: 2rem;
     color: var(--text-primary);
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 2rem 0;
 }
 
 .status {
@@ -335,6 +366,15 @@ input[type="text"]:focus {
 .detail-value {
     color: var(--text-secondary);
     word-break: break-word;
+}
+
+.detail-value a {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.detail-value a:hover {
+    color: var(--primary-hover);
 }
 
 @media (max-width: 768px) {

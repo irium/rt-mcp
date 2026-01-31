@@ -13,6 +13,7 @@ let hdVideoFilter = false;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     checkStatus();
     setupEventListeners();
     renderSearchHistory();
@@ -58,6 +59,46 @@ async function checkStatus() {
     } catch (error) {
         console.error('Status check failed:', error);
         showToast('Failed to check status', 'error');
+    }
+}
+
+// Theme Management
+function initTheme() {
+    // Check localStorage first
+    const savedTheme = localStorage.getItem('theme');
+    
+    if (savedTheme) {
+        setTheme(savedTheme);
+    } else {
+        // Check system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(prefersDark ? 'dark' : 'light');
+    }
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('theme')) {
+            setTheme(e.matches ? 'dark' : 'light');
+        }
+    });
+}
+
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    updateThemeToggle(theme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+}
+
+function updateThemeToggle(theme) {
+    const slider = document.querySelector('.theme-toggle-slider');
+    if (slider) {
+        slider.textContent = theme === 'dark' ? '🌙' : '☀️';
     }
 }
 
@@ -278,7 +319,7 @@ async function viewDetails(torrentId) {
             </div>
             <div class="detail-item">
                 <div class="detail-label">Description</div>
-                <div class="detail-value">${details.content || 'No description available'}</div>
+                <div class="detail-value">${parseDetails(details.content) || 'No description available'}</div>
             </div>
         `;
     } catch (error) {
@@ -361,6 +402,46 @@ function updateHDFilterButton() {
         button.classList.remove('active');
         icon.textContent = '🎬';
         text.textContent = 'All Quality';
+    }
+}
+
+// Theme Management
+function initTheme() {
+    // Check localStorage first
+    const savedTheme = localStorage.getItem('theme');
+    
+    if (savedTheme) {
+        setTheme(savedTheme);
+    } else {
+        // Check system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(prefersDark ? 'dark' : 'light');
+    }
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('theme')) {
+            setTheme(e.matches ? 'dark' : 'light');
+        }
+    });
+}
+
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    updateThemeToggle(theme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+}
+
+function updateThemeToggle(theme) {
+    const slider = document.querySelector('.theme-toggle-slider');
+    if (slider) {
+        slider.textContent = theme === 'dark' ? '🌙' : '☀️';
     }
 }
 
@@ -475,4 +556,15 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Parse details content safely
+function parseDetails(text) {
+    const parsedText = text
+        .replace(/\n/g, '<br>')
+        .replace(/<br><br>\* \* \*<br><br>/gi, '<hr>')
+        .replace(/\[b\](.*?)\[\/b\]/gi, '<strong>$1</strong>')
+        .replace(/\[i\](.*?)\[\/i\]/gi, '<em>$1</em>')
+        .replace(/\[u\](.*?)\[\/u\]/gi, '<u>$1</u>')
+    return parsedText;
 }
