@@ -261,15 +261,44 @@ async function getMagnetLink(torrentId) {
 
         const data = await response.json();
         
-        // Copy to clipboard
-        await navigator.clipboard.writeText(data.magnetLink);
+        // Copy to clipboard with fallback
+        await copyToClipboard(data.magnetLink);
         showToast('Magnet link copied to clipboard!', 'success');
-        
-        // Also open in new tab
-        window.open(data.magnetLink, '_blank');
     } catch (error) {
         console.error('Get magnet error:', error);
         showToast(error.message, 'error');
+    }
+}
+
+// Copy to clipboard with fallback for unsupported browsers
+async function copyToClipboard(text) {
+    // Try modern Clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return;
+        } catch (err) {
+            console.warn('Clipboard API failed, using fallback:', err);
+        }
+    }
+    
+    // Fallback method for older browsers or insecure contexts
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (!successful) {
+            throw new Error('Copy command failed');
+        }
+    } finally {
+        document.body.removeChild(textArea);
     }
 }
 
