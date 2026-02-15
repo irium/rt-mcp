@@ -10,6 +10,9 @@ import type { SearchResult } from '@/types/rutracker'
 import { columns } from './columns'
 import { ResultsHeader } from './ResultsHeader'
 import { EmptyState } from './EmptyState'
+import { ResultCard } from './ResultCard'
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { cn } from '@/utils/cn'
 
 interface ResultsTableProps {
   results: SearchResult[]
@@ -75,7 +78,60 @@ export function ResultsTable({
     <div className="space-y-4">
       <ResultsHeader count={results.length} />
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+      {/* Mobile Card Layout - visible on screens smaller than md (768px) */}
+      <div className="md:hidden space-y-3">
+        {/* Mobile Sorting Bar */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2">
+          <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+            Sort by:
+          </span>
+          {[
+            { key: 'name', label: 'Name' },
+            { key: 'size', label: 'Size' },
+            { key: 'seeders', label: 'Seeders' },
+            { key: 'leechers', label: 'Leechers' },
+          ].map(({ key, label }) => {
+            const column = table.getColumn(key)
+            const isSorted = column?.getIsSorted()
+            
+            return (
+              <button
+                key={key}
+                onClick={() => column?.toggleSorting(isSorted === 'asc')}
+                className={cn(
+                  'flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
+                  isSorted
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                )}
+              >
+                {label}
+                {isSorted === 'asc' ? (
+                  <ArrowUp className="h-3 w-3" />
+                ) : isSorted === 'desc' ? (
+                  <ArrowDown className="h-3 w-3" />
+                ) : (
+                  <ArrowUpDown className="h-3 w-3 opacity-50" />
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Cards */}
+        {table.getRowModel().rows.map((row) => (
+          <ResultCard
+            key={row.id}
+            result={row.original}
+            onMagnetClick={onMagnetClick}
+            onDetailsClick={onDetailsClick}
+            onDownloadClick={onDownloadClick}
+          />
+        ))}
+      </div>
+
+      {/* Desktop Table Layout - visible on screens md (768px) and larger */}
+      <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-800">
             {table.getHeaderGroups().map((headerGroup) => (
