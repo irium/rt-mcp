@@ -1,4 +1,4 @@
-import { Film } from 'lucide-react'
+import { Tv } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 import { cn } from '../../utils/cn'
 
@@ -16,7 +16,7 @@ export function Header({ isConnected = true }: HeaderProps) {
         <div className="flex items-center justify-between">
           {/* Logo and Title */}
           <div className="flex items-center gap-3">
-            <Film className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <Tv className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 RuTracker Search
