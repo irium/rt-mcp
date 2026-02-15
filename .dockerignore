@@ -2,3 +2,5 @@
 ./node_modules
 ./torrents
 ./.cookie
+./frontend/dist
+./frontend/node_modules
