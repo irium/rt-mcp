@@ -1,39 +1,85 @@
-import { useEffect } from 'react'
-import { Toaster } from 'react-hot-toast'
+import { useEffect, useState } from 'react'
+import { Toaster, toast } from 'react-hot-toast'
 import { Layout } from './components/layout/Layout'
 import { SearchForm } from './components/search/SearchForm'
+import { ResultsTable } from './components/results/ResultsTable'
 import { useThemeStore } from './store/themeStore'
+import { rutrackerService } from './services/rutracker'
+import type { SearchResult } from './types/rutracker'
 import './App.css'
 
 function App() {
   const initializeTheme = useThemeStore((state) => state.initializeTheme)
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [hasSearched, setHasSearched] = useState(false)
 
   // Initialize theme on mount
   useEffect(() => {
     initializeTheme()
   }, [initializeTheme])
 
+  const handleSearchSuccess = (searchResults: SearchResult[]) => {
+    setResults(searchResults)
+    setHasSearched(true)
+  }
+
+  const handleMagnetClick = async (id: string) => {
+    try {
+      const { magnetLink } = await rutrackerService.getMagnetLink(id)
+      await navigator.clipboard.writeText(magnetLink)
+      toast.success('Magnet link copied to clipboard!')
+    } catch (error) {
+      toast.error('Failed to copy magnet link')
+    }
+  }
+
+  const handleDetailsClick = async (id: string) => {
+    // TODO: Implement details modal in Phase 4
+    toast('Details modal coming in Phase 4!', { icon: 'ℹ️' })
+    console.log('Details for torrent:', id)
+  }
+
+  const handleDownloadClick = async (id: string, name: string) => {
+    try {
+      const response = await rutrackerService.downloadTorrent(id)
+      toast.success(`Downloading: ${name}`)
+      console.log('Download response:', response)
+    } catch (error) {
+      toast.error('Failed to download torrent')
+    }
+  }
+
   return (
     <Layout isConnected={true}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Search RuTracker
           </h2>
           
-          <SearchForm />
+          <SearchForm onSearchSuccess={handleSearchSuccess} />
+
+          <div className="mt-8">
+            <ResultsTable
+              results={results}
+              hasSearched={hasSearched}
+              onMagnetClick={handleMagnetClick}
+              onDetailsClick={handleDetailsClick}
+              onDownloadClick={handleDownloadClick}
+            />
+          </div>
 
           <div className="mt-8 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
             <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">
-              Phase 2 Complete ✓
+              Phase 3 Complete ✓
             </h3>
             <ul className="list-disc list-inside text-green-800 dark:text-green-200 space-y-1">
-              <li>Search form with title, year, and season inputs</li>
-              <li>React Query integration for API calls</li>
-              <li>Reusable Button and Input components</li>
-              <li>Toast notifications for feedback</li>
-              <li>Form validation and loading states</li>
-              <li>Dark mode support</li>
+              <li>TanStack Table integration with sorting</li>
+              <li>Results table with all columns (name, size, ETA, seeders, leechers)</li>
+              <li>Action buttons (Magnet, Details, Download)</li>
+              <li>Empty state for no results</li>
+              <li>Results header with count</li>
+              <li>Responsive table design</li>
             </ul>
           </div>
         </div>

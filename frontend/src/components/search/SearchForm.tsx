@@ -4,10 +4,10 @@ import { toast } from 'react-hot-toast'
 import { rutrackerService } from '../../services/rutracker'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
-import type { SearchParams } from '../../types/rutracker'
+import type { SearchParams, SearchResult } from '../../types/rutracker'
 
 interface SearchFormProps {
-  onSearchSuccess?: () => void
+  onSearchSuccess?: (results: SearchResult[]) => void
 }
 
 export function SearchForm({ onSearchSuccess }: SearchFormProps) {
@@ -19,7 +19,7 @@ export function SearchForm({ onSearchSuccess }: SearchFormProps) {
     mutationFn: (params: SearchParams) => rutrackerService.search(params),
     onSuccess: (data) => {
       toast.success(`Found ${data.length} results`)
-      onSearchSuccess?.()
+      onSearchSuccess?.(data)
     },
     onError: (error: Error) => {
       toast.error(error.message)

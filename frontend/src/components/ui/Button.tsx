@@ -4,7 +4,8 @@ import { cn } from '../../utils/cn'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean
-  variant?: 'primary' | 'success' | 'danger'
+  variant?: 'primary' | 'success' | 'danger' | 'ghost'
+  size?: 'sm' | 'md' | 'lg'
 }
 
 export function Button({
@@ -13,22 +14,31 @@ export function Button({
   loading = false,
   disabled = false,
   variant = 'primary',
+  size = 'md',
   ...props
 }: ButtonProps) {
   const variantClasses = {
-    primary: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600',
-    success: 'bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
-    danger: 'bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600',
+    primary: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white',
+    success: 'bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white',
+    danger: 'bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white',
+    ghost: 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300',
+  }
+
+  const sizeClasses = {
+    sm: 'px-2 py-1 text-sm',
+    md: 'px-4 py-2',
+    lg: 'px-6 py-3 text-lg',
   }
 
   return (
     <button
       className={cn(
-        'px-4 py-2 rounded-lg font-medium text-white',
+        'rounded-lg font-medium',
         'transition-colors duration-200',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         'flex items-center justify-center gap-2',
         variantClasses[variant],
+        sizeClasses[size],
         className
       )}
       disabled={disabled || loading}
