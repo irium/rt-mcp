@@ -48,7 +48,14 @@ export const useThemeStore = create<ThemeState>()(
         }
 
         set({ theme })
-        applyTheme(theme)
+        // Only apply if not already applied (by inline script in index.html)
+        const root = document.documentElement
+        const isDarkApplied = root.classList.contains('dark')
+        const shouldBeDark = theme === 'dark'
+        
+        if (isDarkApplied !== shouldBeDark) {
+          applyTheme(theme)
+        }
       },
     }),
     {

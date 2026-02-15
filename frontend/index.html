@@ -5,6 +5,31 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>frontend</title>
+    <script>
+      // Apply theme immediately to prevent flash
+      (function() {
+        try {
+          const stored = localStorage.getItem('theme-storage');
+          let theme = 'light';
+          
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            theme = parsed.state?.theme || 'light';
+          } else {
+            // No stored preference, check system preference
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              theme = 'dark';
+            }
+          }
+          
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {
+          // Silently fail - theme will be applied by React
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
