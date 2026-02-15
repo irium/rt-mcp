@@ -14,7 +14,7 @@ export const columns: ColumnDef<SearchResult>[] = [
     header: ({ column }) => {
       return (
         <button
-          className="flex items-center gap-2 hover:text-primary transition-colors"
+          className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer px-2 py-1 rounded"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Name
@@ -41,7 +41,7 @@ export const columns: ColumnDef<SearchResult>[] = [
     header: ({ column }) => {
       return (
         <button
-          className="flex items-center gap-2 hover:text-primary transition-colors"
+          className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer px-2 py-1 rounded"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Size
@@ -71,7 +71,7 @@ export const columns: ColumnDef<SearchResult>[] = [
     header: ({ column }) => {
       return (
         <button
-          className="flex items-center gap-2 hover:text-primary transition-colors"
+          className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer px-2 py-1 rounded"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Seeders
@@ -101,7 +101,7 @@ export const columns: ColumnDef<SearchResult>[] = [
     header: ({ column }) => {
       return (
         <button
-          className="flex items-center gap-2 hover:text-primary transition-colors"
+          className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer px-2 py-1 rounded"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Leechers

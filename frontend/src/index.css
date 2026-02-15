@@ -60,3 +60,12 @@
   --toast-bg: #1f2937;
   --toast-color: #f9fafb;
 }
+
+/* Body background colors */
+body {
+  background-color: #ffffff;
+}
+
+.dark body {
+  background-color: #121212;
+}

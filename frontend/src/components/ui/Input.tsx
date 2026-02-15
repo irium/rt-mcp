@@ -3,12 +3,14 @@ import { cn } from '../../utils/cn'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
+  labelAlign?: 'left' | 'center' | 'right'
 }
 
 export function Input({
   label,
   name,
   className,
+  labelAlign,
   ...props
 }: InputProps) {
   return (
@@ -16,7 +18,12 @@ export function Input({
       {label && (
         <label
           htmlFor={name}
-          className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          className={cn(
+            "text-sm font-medium text-gray-700 dark:text-gray-300",
+            labelAlign === 'left' && 'text-left',
+            labelAlign === 'center' && 'text-center',
+            labelAlign === 'right' && 'text-right'
+          )}
         >
           {label}
         </label>

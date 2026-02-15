@@ -69,10 +69,6 @@ function App() {
     <Layout isConnected={true}>
       <div className="max-w-7xl mx-auto">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Search RuTracker
-          </h2>
-          
           <SearchForm onSearchSuccess={handleSearchSuccess} />
 
           <div className="mt-8">
@@ -92,17 +88,6 @@ function App() {
             />
           </div>
 
-          <div className="mt-8 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">
-              Phase 5 Complete ✓
-            </h3>
-            <ul className="list-disc list-inside text-green-800 dark:text-green-200 space-y-1">
-              <li>FilterPanel component with HD Video toggle</li>
-              <li>Filter store with Zustand (persisted to localStorage)</li>
-              <li>Filter applied to results based on forum category</li>
-              <li>Shows filtered/total count when HD filter is active</li>
-            </ul>
-          </div>
         </div>
       </div>
 

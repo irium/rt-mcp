@@ -69,6 +69,7 @@ export function SearchForm({ onSearchSuccess }: SearchFormProps) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="e.g., Титаник, Titanic"
+        labelAlign="left"
         required
       />
 
@@ -79,6 +80,7 @@ export function SearchForm({ onSearchSuccess }: SearchFormProps) {
           value={year}
           onChange={(e) => setYear(e.target.value)}
           placeholder="e.g., 2023"
+          labelAlign="left"
         />
 
         <Input
@@ -87,6 +89,7 @@ export function SearchForm({ onSearchSuccess }: SearchFormProps) {
           value={season}
           onChange={(e) => setSeason(e.target.value)}
           placeholder="e.g., 1, 2"
+          labelAlign="left"
         />
       </div>
 
