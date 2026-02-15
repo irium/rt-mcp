@@ -3,6 +3,7 @@ import type { SearchResult } from '@/types/rutracker'
 import { ArrowUpDown, Magnet, Info, Download } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { formatSize, formatETA } from '@/utils/format'
+import { cn } from '../../utils/cn'
 
 /**
  * Column definitions for the results table
@@ -124,6 +125,11 @@ export const columns: ColumnDef<SearchResult>[] = [
           <Button
             variant="ghost"
             size="sm"
+            className={cn(
+              'p-2 rounded-lg transition-colors duration-200',
+              'hover:bg-gray-200 dark:hover:bg-gray-700',
+              'focus:outline-none'
+            )}            
             onClick={() => {
               // This will be handled by the parent component
               const event = new CustomEvent('magnet-click', {
@@ -138,6 +144,11 @@ export const columns: ColumnDef<SearchResult>[] = [
           <Button
             variant="ghost"
             size="sm"
+            className={cn(
+              'p-2 rounded-lg transition-colors duration-200',
+              'hover:bg-gray-200 dark:hover:bg-gray-700',
+              'focus:outline-none'
+            )}            
             onClick={() => {
               // This will be handled by the parent component
               const event = new CustomEvent('details-click', {
@@ -152,6 +163,11 @@ export const columns: ColumnDef<SearchResult>[] = [
           <Button
             variant="ghost"
             size="sm"
+            className={cn(
+              'p-2 rounded-lg transition-colors duration-200',
+              'hover:bg-gray-200 dark:hover:bg-gray-700',
+              'focus:outline-none'
+            )}            
             onClick={() => {
               // This will be handled by the parent component
               const event = new CustomEvent('download-click', {
