@@ -19,7 +19,7 @@ async function bootstrap() {
     prefix: '/',
   });
 
-  await app.listen(3000);
+  await app.listen(4000);
   console.log(`Application is running on: ${await app.getUrl()}`);
   console.log(`Web UI available at: ${await app.getUrl()}/`);
   console.log(`API available at: ${await app.getUrl()}/api/`);
