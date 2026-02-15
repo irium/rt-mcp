@@ -3,6 +3,7 @@ import { Toaster, toast } from 'react-hot-toast'
 import { Layout } from './components/layout/Layout'
 import { SearchForm } from './components/search/SearchForm'
 import { ResultsTable } from './components/results/ResultsTable'
+import { DetailsModal } from './components/modals/DetailsModal'
 import { useThemeStore } from './store/themeStore'
 import { rutrackerService } from './services/rutracker'
 import type { SearchResult } from './types/rutracker'
@@ -12,6 +13,8 @@ function App() {
   const initializeTheme = useThemeStore((state) => state.initializeTheme)
   const [results, setResults] = useState<SearchResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
+  const [selectedTorrent, setSelectedTorrent] = useState<SearchResult | null>(null)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
 
   // Initialize theme on mount
   useEffect(() => {
@@ -34,9 +37,11 @@ function App() {
   }
 
   const handleDetailsClick = async (id: string) => {
-    // TODO: Implement details modal in Phase 4
-    toast('Details modal coming in Phase 4!', { icon: 'ℹ️' })
-    console.log('Details for torrent:', id)
+    const torrent = results.find((r) => r.id === id)
+    if (torrent) {
+      setSelectedTorrent(torrent)
+      setIsDetailsModalOpen(true)
+    }
   }
 
   const handleDownloadClick = async (id: string, name: string) => {
@@ -71,19 +76,25 @@ function App() {
 
           <div className="mt-8 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
             <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">
-              Phase 3 Complete ✓
+              Phase 4 Complete ✓
             </h3>
             <ul className="list-disc list-inside text-green-800 dark:text-green-200 space-y-1">
-              <li>TanStack Table integration with sorting</li>
-              <li>Results table with all columns (name, size, ETA, seeders, leechers)</li>
-              <li>Action buttons (Magnet, Details, Download)</li>
-              <li>Empty state for no results</li>
-              <li>Results header with count</li>
-              <li>Responsive table design</li>
+              <li>Reusable Modal component with ESC key and backdrop click</li>
+              <li>DetailsModal with React Query for fetching torrent details</li>
+              <li>Display torrent information (title, size, seeders, leechers, etc.)</li>
+              <li>Magnet link copy functionality</li>
+              <li>Loading state while fetching details</li>
+              <li>Integrated with ResultsTable</li>
             </ul>
           </div>
         </div>
       </div>
+
+      <DetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        torrent={selectedTorrent}
+      />
 
       <Toaster
         position="top-right"
