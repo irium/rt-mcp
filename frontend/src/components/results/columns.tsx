@@ -3,6 +3,7 @@ import type { SearchResult } from '@/types/rutracker'
 import { ArrowUpDown, Magnet, Info, Download } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { formatSize, formatETA } from '@/utils/format'
+import { parseQuality, getQualityBadge } from '@/utils/parseQuality'
 import { cn } from '../../utils/cn'
 
 /**
@@ -24,10 +25,23 @@ export const columns: ColumnDef<SearchResult>[] = [
     },
     cell: ({ row }) => {
       const name = row.getValue('name') as string
+      const quality = parseQuality(name)
+      const badge = getQualityBadge(quality)
+      
       return (
         <div className="max-w-md">
-          <div className="font-medium text-sm truncate" title={name}>
-            {name}
+          <div className="flex items-center gap-2">
+            <div className="font-medium text-sm truncate" title={name}>
+              {name}
+            </div>
+            {badge && (
+              <span className={cn(
+                'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap',
+                badge.color
+              )}>
+                {badge.text}
+              </span>
+            )}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
             {row.original.forum}
