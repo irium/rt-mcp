@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
 import { Layout } from './components/layout/Layout'
 import { SearchForm } from './components/search/SearchForm'
+import { FilterPanel } from './components/search/FilterPanel'
 import { ResultsTable } from './components/results/ResultsTable'
 import { DetailsModal } from './components/modals/DetailsModal'
 import { useThemeStore } from './store/themeStore'
+import { useFilterStore } from './store/filterStore'
 import { rutrackerService } from './services/rutracker'
 import type { SearchResult } from './types/rutracker'
 import './App.css'
 
 function App() {
   const initializeTheme = useThemeStore((state) => state.initializeTheme)
+  const hdVideoOnly = useFilterStore((state) => state.hdVideoOnly)
   const [results, setResults] = useState<SearchResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
   const [selectedTorrent, setSelectedTorrent] = useState<SearchResult | null>(null)
@@ -25,6 +28,14 @@ function App() {
     setResults(searchResults)
     setHasSearched(true)
   }
+
+  // Filter results based on HD Video setting
+  const filteredResults = useMemo(() => {
+    if (!hdVideoOnly) return results
+    return results.filter(
+      (r) => r.forum.includes('HD Video') || r.forum.includes('HD Видео')
+    )
+  }, [results, hdVideoOnly])
 
   const handleMagnetClick = async (id: string) => {
     try {
@@ -65,8 +76,15 @@ function App() {
           <SearchForm onSearchSuccess={handleSearchSuccess} />
 
           <div className="mt-8">
+            <FilterPanel
+              totalResults={results.length}
+              filteredResults={filteredResults.length}
+            />
+          </div>
+
+          <div className="mt-4">
             <ResultsTable
-              results={results}
+              results={filteredResults}
               hasSearched={hasSearched}
               onMagnetClick={handleMagnetClick}
               onDetailsClick={handleDetailsClick}
@@ -76,15 +94,13 @@ function App() {
 
           <div className="mt-8 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
             <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">
-              Phase 4 Complete ✓
+              Phase 5 Complete ✓
             </h3>
             <ul className="list-disc list-inside text-green-800 dark:text-green-200 space-y-1">
-              <li>Reusable Modal component with ESC key and backdrop click</li>
-              <li>DetailsModal with React Query for fetching torrent details</li>
-              <li>Display torrent information (title, size, seeders, leechers, etc.)</li>
-              <li>Magnet link copy functionality</li>
-              <li>Loading state while fetching details</li>
-              <li>Integrated with ResultsTable</li>
+              <li>FilterPanel component with HD Video toggle</li>
+              <li>Filter store with Zustand (persisted to localStorage)</li>
+              <li>Filter applied to results based on forum category</li>
+              <li>Shows filtered/total count when HD filter is active</li>
             </ul>
           </div>
         </div>
