@@ -38,6 +38,7 @@ export function Button({
         'transition-colors duration-200',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         'flex items-center justify-center gap-2',
+        'focus:outline-none',
         variantClasses[variant],
         sizeClasses[size],
         className
