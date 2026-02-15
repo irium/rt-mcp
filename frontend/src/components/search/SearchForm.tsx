@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { rutrackerService } from '../../services/rutracker'
+import { useSearchHistory } from '../../hooks/useSearchHistory'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
+import { SearchHistory } from './SearchHistory'
 import type { SearchParams, SearchResult } from '../../types/rutracker'
+import type { SearchHistoryItem } from '../../hooks/useSearchHistory'
 
 interface SearchFormProps {
   onSearchSuccess?: (results: SearchResult[]) => void
@@ -14,6 +17,8 @@ export function SearchForm({ onSearchSuccess }: SearchFormProps) {
   const [title, setTitle] = useState('')
   const [year, setYear] = useState('')
   const [season, setSeason] = useState('')
+
+  const { addToHistory } = useSearchHistory()
 
   const searchMutation = useMutation({
     mutationFn: (params: SearchParams) => rutrackerService.search(params),
@@ -34,11 +39,26 @@ export function SearchForm({ onSearchSuccess }: SearchFormProps) {
       return
     }
 
-    searchMutation.mutate({
+    const searchParams = {
       title: title.trim(),
       year: year.trim() || undefined,
       season: season.trim() || undefined,
-    })
+    }
+
+    // Add to search history
+    addToHistory(
+      searchParams.title,
+      searchParams.year ? parseInt(searchParams.year, 10) : undefined,
+      searchParams.season ? parseInt(searchParams.season, 10) : undefined
+    )
+
+    searchMutation.mutate(searchParams)
+  }
+
+  const handleHistorySelect = (item: SearchHistoryItem) => {
+    setTitle(item.query)
+    setYear(item.year?.toString() || '')
+    setSeason(item.season?.toString() || '')
   }
 
   return (
@@ -77,6 +97,8 @@ export function SearchForm({ onSearchSuccess }: SearchFormProps) {
       >
         Search
       </Button>
+
+      <SearchHistory onSelect={handleHistorySelect} />
     </form>
   )
 }
