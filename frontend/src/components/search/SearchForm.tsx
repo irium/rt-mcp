@@ -75,7 +75,7 @@ export function SearchForm({ onSearchSuccess }: SearchFormProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <Input
-          label="Year (optional)"
+          label="Year"
           name="year"
           value={year}
           onChange={(e) => setYear(e.target.value)}
@@ -84,7 +84,7 @@ export function SearchForm({ onSearchSuccess }: SearchFormProps) {
         />
 
         <Input
-          label="Season (optional)"
+          label="Season"
           name="season"
           value={season}
           onChange={(e) => setSeason(e.target.value)}

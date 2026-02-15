@@ -9,6 +9,7 @@ import { useThemeStore } from './store/themeStore'
 import { useFilterStore } from './store/filterStore'
 import { rutrackerService } from './services/rutracker'
 import type { SearchResult } from './types/rutracker'
+import { copyToClipboard } from './utils/copyToClipboard'
 import './App.css'
 
 function App() {
@@ -40,7 +41,7 @@ function App() {
   const handleMagnetClick = async (id: string) => {
     try {
       const { magnetLink } = await rutrackerService.getMagnetLink(id)
-      await navigator.clipboard.writeText(magnetLink)
+      await copyToClipboard(magnetLink)
       toast.success('Magnet link copied to clipboard!')
     } catch (error) {
       toast.error('Failed to copy magnet link')

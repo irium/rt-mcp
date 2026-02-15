@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { Loader2, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'react-hot-toast'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { rutrackerService } from '../../services/rutracker'
 import { parseDetails } from '../../utils/parseDetails'
 import { formatSize, formatETA } from '../../utils/format'
 import type { SearchResult } from '../../types/rutracker'
+import { copyToClipboard } from '@/utils/copyToClipboard'
 
 interface DetailsModalProps {
   isOpen: boolean
@@ -28,11 +30,12 @@ export function DetailsModal({ isOpen, onClose, torrent }: DetailsModalProps) {
   const handleCopyMagnet = async () => {
     if (details?.magnetLink) {
       try {
-        await navigator.clipboard.writeText(details.magnetLink)
+        await copyToClipboard(details.magnetLink)
+        toast.success('Magnet link copied to clipboard!')
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       } catch (error) {
-        console.error('Failed to copy magnet link:', error)
+        toast.error('Failed to copy magnet link')
       }
     }
   }
