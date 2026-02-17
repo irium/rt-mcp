@@ -81,10 +81,7 @@ export function ResultsTable({
       {/* Mobile Card Layout - visible on screens smaller than md (768px) */}
       <div className="md:hidden space-y-3">
         {/* Mobile Sorting Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-            Sort by:
-          </span>
+        <div className="flex flex-wrap items-center gap-1 pb-1">
           {[
             { key: 'name', label: 'Name' },
             { key: 'size', label: 'Size' },
