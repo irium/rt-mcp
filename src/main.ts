@@ -16,7 +16,8 @@ async function bootstrap() {
 
   // Serve static files for Web UI
   app.useStaticAssets(join(__dirname, '..', 'public'), {
-    prefix: '/',
+    // prefix: '/',
+    index: 'index.html',
   });
 
   await app.listen(4000);

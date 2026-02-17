@@ -26,7 +26,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
 COPY --from=backend-builder /app/dist ./dist
-COPY --from=frontend-builder /app/frontend/dist ./public
+COPY --from=frontend-builder /app/public ./public
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/
