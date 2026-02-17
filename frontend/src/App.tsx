@@ -69,7 +69,7 @@ function App() {
   return (
     <Layout isConnected={true}>
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+        <div className="bg-white dark:bg-gray-800 md:rounded-lg shadow-lg p-8">
           <SearchForm onSearchSuccess={handleSearchSuccess} />
 
           <div className="mt-8">
