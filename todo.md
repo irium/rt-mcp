@@ -1,2 +1,3 @@
 [x] fix sorting by Size (now it uses string sorting)
-[ ] change 'Download' button bevavior
+[x] disable 'Download' button
+[ ] implement Torrent file download for 'Download' button

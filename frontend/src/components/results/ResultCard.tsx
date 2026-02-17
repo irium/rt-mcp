@@ -122,6 +122,7 @@ export function ResultCard({
           variant="ghost"
           size="sm"
           className={cn(
+            'opacity-50 cursor-not-allowed pointer-events-none', // Disabled
             'flex-1 p-2 rounded-lg transition-colors duration-200',
             'hover:bg-gray-200 dark:hover:bg-gray-700',
             'focus:outline-none'
