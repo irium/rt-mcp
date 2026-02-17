@@ -67,6 +67,11 @@ export const columns: ColumnDef<SearchResult>[] = [
       const size = row.getValue('size') as number
       return <div className="font-mono text-sm">{formatSize(size)}</div>
     },
+    sortingFn: (rowA, rowB) => {
+      const sizeA = rowA.getValue('size') as number
+      const sizeB = rowB.getValue('size') as number
+      return sizeA - sizeB
+    },
   },
   {
     accessorKey: 'etaInMinutes',
