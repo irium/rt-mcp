@@ -1,8 +1,8 @@
-# Task 3: Frontend Auth Integration
+# Task 3: Frontend Auth
 
 ## Goal
 
-Implement authentication UI and state management in the React frontend.
+Auth UI and state management with Zustand.
 
 ## Files to Create/Modify
 
@@ -11,169 +11,333 @@ frontend/src/
 ├── components/
 │   └── auth/
 │       └── LoginForm.tsx
-├── hooks/
-│   └── useAuth.ts
-├── services/
-│   └── auth.ts
 ├── store/
 │   └── authStore.ts
-└── types/
-    └── auth.ts
+└── services/
+    └── auth.ts  (update existing api.ts)
 ```
 
 ## Implementation Steps
 
-### 1. Create Auth Types
-
-`frontend/src/types/auth.ts`:
-
-```typescript
-interface User {
-  username: string
-  features: string[]
-}
-
-interface AuthState {
-  user: User | null
-  token: string | null
-  isAuthenticated: boolean
-  login: (username: string, password: string) => Promise<void>
-  logout: () => void
-  checkAuth: () => void
-}
-```
-
-### 2. Create Auth Service
-
-`frontend/src/services/auth.ts`:
-
-```typescript
-const authService = {
-  getConfig: async () => {
-    // GET /auth/config - returns { allowAnonymous: boolean }
-  },
-  login: async (username: string, password: string) => {
-    // POST /auth/login
-  },
-  loginAnonymous: async () => {
-    // POST /auth/anonymous
-  },
-  me: async () => {
-    // GET /auth/me
-  },
-  getFeatures: async () => {
-    // GET /auth/features
-  }
-}
-```
-
-### 3. Create Auth Store (Zustand)
+### 1. Create Auth Store (Zustand)
 
 `frontend/src/store/authStore.ts`:
 
-- Store user, token, isAuthenticated
-- Persist token to localStorage
-- Auto-restore session on page load
-- Provide login/logout actions
+```typescript
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
-### 4. Create Login Form
+interface User {
+  username: string
+  role: 'admin' | 'user'
+}
+
+interface AuthStore {
+  token: string | null
+  user: User | null
+  isAuthenticated: boolean
+  
+  login: (username: string, password: string) => Promise<void>
+  logout: () => void
+  checkAuth: () => Promise<void>
+}
+
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set) => ({
+      token: null,
+      user: null,
+      isAuthenticated: false,
+
+      login: async (username, password) => {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Invalid credentials')
+        }
+
+        const { accessToken, user } = await response.json()
+        
+        set({
+          token: accessToken,
+          user,
+          isAuthenticated: true,
+        })
+      },
+
+      logout: () => {
+        set({
+          token: null,
+          user: null,
+          isAuthenticated: false,
+        })
+      },
+
+      checkAuth: async () => {
+        const state = useAuthStore.getState()
+        if (!state.token) return
+
+        try {
+          const response = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${state.token}` },
+          })
+
+          if (!response.ok) {
+            throw new Error('Token invalid')
+          }
+
+          const user = await response.json()
+          set({ user, isAuthenticated: true })
+        } catch {
+          set({ token: null, user: null, isAuthenticated: false })
+        }
+      },
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({ token: state.token }), // Only persist token
+    }
+  )
+)
+```
+
+### 2. Create Login Form
 
 `frontend/src/components/auth/LoginForm.tsx`:
 
-- Username/password inputs
-- Submit button with loading state
-- Error message display
-- Redirect on successful login
-
-### 5. Create Auth Hook
-
-`frontend/src/hooks/useAuth.ts`:
-
-- Wrap auth store for convenience
-- Provide `hasFeature(feature)` helper
-- Return auth state and actions
-
-### 6. Update API Service
-
-Modify `frontend/src/services/api.ts`:
-
-- Add auth token to requests automatically
-- Handle 401 responses (redirect to login)
-- Add interceptor for token refresh (optional)
-
-### 7. Protect Routes
-
-Create protected route wrapper or add auth check in `App.tsx`:
-
 ```tsx
-function App() {
-  const { isAuthenticated, allowAnonymous } = useAuth()
+import { useState } from 'react'
+import { useAuthStore } from '../../store/authStore'
+import { Button } from '../ui/Button'
+import { Input } from '../ui/Input'
+
+export function LoginForm() {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   
-  // Auto-login anonymous if allowed and not authenticated
-  useEffect(() => {
-    if (!isAuthenticated && allowAnonymous) {
-      loginAnonymous()
+  const login = useAuthStore(state => state.login)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      await login(username, password)
+    } catch (err) {
+      setError('Invalid username or password')
+    } finally {
+      setLoading(false)
     }
-  }, [])
-  
-  if (!isAuthenticated) {
-    return <LoginForm />
   }
-  
-  return <MainApp />
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <h2 className="text-2xl font-bold text-center">Sign In</h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          
+          <Input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          {error && (
+            <div className="text-red-500 text-sm">{error}</div>
+          )}
+
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? 'Signing in...' : 'Sign In'}
+          </Button>
+        </form>
+      </div>
+    </div>
+  )
 }
 ```
 
-### 8. Anonymous Login Flow
+### 3. Update API Service
 
-On app start:
-1. Check localStorage for existing token
-2. If no token, call `GET /auth/config` to check if anonymous allowed
-3. If `allowAnonymous: true`, auto-call `POST /auth/anonymous`
-4. Store returned token and proceed to main app
-5. If anonymous not allowed, show login form
+Modify `frontend/src/services/api.ts` to add auth header:
 
-### 9. Update Layout
+```typescript
+import { useAuthStore } from '../store/authStore'
 
-Modify `frontend/src/components/layout/Layout.tsx`:
+// Add interceptor to attach token
+export async function apiRequest(url: string, options: RequestInit = {}) {
+  const token = useAuthStore.getState().token
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  }
 
-- Add logout button in header
-- Show current username
-- Hide elements based on features
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  })
+
+  // Handle 401 - unauthorized
+  if (response.status === 401) {
+    useAuthStore.getState().logout()
+    window.location.href = '/login'
+  }
+
+  return response
+}
+```
+
+### 4. Update App Component
+
+`frontend/src/App.tsx`:
+
+```tsx
+import { useEffect } from 'react'
+import { useAuthStore } from './store/authStore'
+import { LoginForm } from './components/auth/LoginForm'
+import { Layout } from './components/layout/Layout'
+
+export function App() {
+  const { isAuthenticated, checkAuth } = useAuthStore()
+
+  // Check if ALLOW_ANONYMOUS on app load
+  useEffect(() => {
+    // Try to restore session from token
+    checkAuth()
+  }, [checkAuth])
+
+  if (!isAuthenticated) {
+    return <LoginForm />
+  }
+
+  return (
+    <Layout>
+      {/* Your main app */}
+    </Layout>
+  )
+}
+```
+
+### 5. Update Header with Logout
+
+`frontend/src/components/layout/Header.tsx`:
+
+```tsx
+import { useAuthStore } from '../../store/authStore'
+import { Button } from '../ui/Button'
+
+export function Header() {
+  const { user, logout } = useAuthStore()
+
+  return (
+    <header className="...">
+      <div className="flex items-center gap-4">
+        <span>Welcome, {user?.username}</span>
+        {user?.role === 'admin' && <span className="text-xs">(Admin)</span>}
+        <Button onClick={logout} variant="outline">Logout</Button>
+      </div>
+    </header>
+  )
+}
+```
+
+### 6. Role-Based UI
+
+Simple conditional rendering based on role:
+
+```tsx
+// In any component
+import { useAuthStore } from '../../store/authStore'
+
+export function SomeComponent() {
+  const user = useAuthStore(state => state.user)
+
+  return (
+    <div>
+      {user?.role === 'admin' && (
+        <Button>Admin Only Feature</Button>
+      )}
+    </div>
+  )
+}
+```
+
+### 7. Anonymous Mode Support
+
+Frontend needs to check if anonymous mode is enabled:
+
+```typescript
+// In App.tsx
+useEffect(() => {
+  const init = async () => {
+    // Try to restore token first
+    await checkAuth()
+    
+    // If no token, check if anonymous allowed
+    if (!useAuthStore.getState().isAuthenticated) {
+      const response = await fetch('/api/auth/config')
+      const { allowAnonymous } = await response.json()
+      
+      if (allowAnonymous) {
+        // Skip login, mark as authenticated with admin role
+        useAuthStore.setState({ 
+          isAuthenticated: true,
+          user: { username: 'anonymous', role: 'admin' }
+        })
+      }
+    }
+  }
+  
+  init()
+}, [])
+```
+
+Backend `JwtAuthGuard` returns `true` immediately when `ALLOW_ANONYMOUS=true`, so requests work without tokens.
 
 ## UI Flow
 
 ```mermaid
 flowchart TD
     A[App Load] --> B{Token in localStorage?}
-    B -->|No| H{Anonymous allowed?}
-    B -->|Yes| D[Validate Token]
-    H -->|Yes| I[Auto Anonymous Login]
-    H -->|No| C[Show Login Form]
-    I -->|Success| F[Store Token]
-    I -->|Fail| C
-    D -->|Valid| E[Show Main App]
-    D -->|Invalid| H
-    C -->|Login Success| F
+    B -->|Yes| C[Call GET /auth/me]
+    B -->|No| D[Show Login Form]
+    C -->|Valid| E[Show Main App]
+    C -->|Invalid| D
+    D -->|Login Success| F[Store Token]
     F --> E
     E -->|Logout| G[Clear Token]
-    G --> H
+    G --> D
 ```
 
 ## Token Storage
 
-- Store JWT in `localStorage` as `auth_token`
-- Clear on logout
-- Auto-add to API requests via header
+- Store only token in localStorage (persist via Zustand)
+- User info fetched on app load
+- Auto-logout on 401 response
 
-## API Integration
+## Files Summary
 
-Update API base URL handling:
-- Auth endpoints: `/auth/*`
-- Protected endpoints require `Authorization: Bearer <token>`
-
-## Error Handling
-
-- Show error toast on login failure
-- Redirect to login on 401
-- Show message on session expired
+- `authStore.ts` - State management
+- `LoginForm.tsx` - UI
+- Update `api.ts` - Add auth header

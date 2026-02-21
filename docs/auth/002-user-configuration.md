@@ -2,108 +2,141 @@
 
 ## Goal
 
-Create a simple JSON-based user configuration system for storing allowed users, their credentials, and custom settings.
-
-## Approach
-
-Use a JSON file for user storage - simple, no database required for a home project.
+JSON file for user storage.
 
 ## Files to Create
 
 ```
 config/
-└── users.json
+├── users.json
+└── users.example.json
 
 src/
-├── config/
-│   └── users.config.ts
-└── auth/
-    └── interfaces/
-        └── user.interface.ts
+└── config/
+    └── users.config.ts
 ```
 
 ## User Interface
 
 ```typescript
-interface UserSettings {
-  role?: string
-  features?: string[]
-  [key: string]: unknown  // Allow custom settings
+export interface User {
+  username: string
+  passwordHash: string  // bcrypt hash
+  role: 'admin' | 'user'
 }
 
-interface User {
-  username: string
-  passwordHash: string  // Not required for "anonymous" user
-  settings: UserSettings
+export interface UsersConfig {
+  users: User[]
 }
 ```
 
-## Anonymous User
-
-Built-in user for anonymous access when `ALLOW_ANONYMOUS=true`:
-- Username must be exactly "anonymous"
-- No passwordHash required (ignored if present)
-- Settings define what anonymous users can do
-- Must be explicitly defined in users.json
-
 ## Implementation Steps
 
-### 1. Create User Interface
+### 1. Create Example Config
 
-Define types in `src/auth/interfaces/user.interface.ts`:
-- `User` - user entity with username, passwordHash, settings
-- `UserSettings` - flexible settings object
-- `UserConfig` - root config with users array
-
-### 2. Create Users Config File
-
-Create `config/users.json` with default admin user and optional anonymous user:
+`config/users.example.json`:
 
 ```json
 {
   "users": [
     {
       "username": "admin",
-      "passwordHash": "$2b$10$...",
-      "settings": {
-        "role": "admin",
-        "features": ["download", "settings", "mcp"]
-      }
+      "passwordHash": "$2b$10$example_hash_replace_with_real_hash",
+      "role": "admin"
     },
     {
-      "username": "anonymous",
-      "settings": {
-        "role": "guest",
-        "features": [""]
-      }
+      "username": "user",
+      "passwordHash": "$2b$10$another_example_hash",
+      "role": "user"
     }
   ]
 }
 ```
 
-Note: The "anonymous" user is only used when `ALLOW_ANONYMOUS=true`.
-
-### 3. Create Users Config Service
+### 2. Create Users Config Service
 
 `src/config/users.config.ts`:
-- Load users from JSON file
-- Provide `getUsers()` method
-- Cache users in memory
 
-### 4. Password Hashing Utility
+```typescript
+@Injectable()
+export class UsersConfig {
+  private users: User[]
 
-Create utility for generating password hashes:
+  constructor(private configService: ConfigService) {
+    const configPath = this.configService.get<string>('USERS_CONFIG_PATH') 
+      || path.join(process.cwd(), 'config', 'users.json')
+    
+    try {
+      const data = fs.readFileSync(configPath, 'utf-8')
+      const config = JSON.parse(data)
+      
+      // Validate structure
+      if (!config.users || !Array.isArray(config.users)) {
+        throw new Error('Invalid users.json structure')
+      }
+      
+      this.users = config.users
+    } catch (error) {
+      console.error('Failed to load users.json:', error)
+      throw error
+    }
+  }
 
-```bash
-# CLI command to generate hash
-npm run hash-password -- mypassword
+  getUsers(): User[] {
+    return this.users
+  }
+
+  findByUsername(username: string): User | undefined {
+    return this.users.find(u => u.username === username)
+  }
+}
 ```
 
-### 5. Update Auth Service
+### 3. Update Config Module
 
-- Inject `UsersConfig` into `AuthService`
-- Use `getUsers()` to validate credentials
-- Include user settings in JWT claims
+`src/config/config.module.ts`:
+
+```typescript
+@Module({
+  providers: [UsersConfig],
+  exports: [UsersConfig],
+})
+export class ConfigModule {}
+```
+
+### 4. Password Hashing Script
+
+Add to `package.json`:
+
+```json
+{
+  "scripts": {
+    "hash-password": "node -e \"const bcrypt = require('bcrypt'); const pw = process.argv[1]; bcrypt.hash(pw, 10).then(console.log)\""
+  }
+}
+```
+
+Usage:
+
+```bash
+npm run hash-password mypassword
+# Copy output to users.json
+```
+
+### 5. Add to .gitignore
+
+```
+config/users.json
+```
+
+### 6. Validation on Load
+
+The service validates:
+- File exists and is valid JSON
+- Has `users` array
+- Each user has username, passwordHash, role
+
+If validation fails, server won't start (fail fast).
 
 ## Configuration Schema
 
@@ -111,36 +144,44 @@ npm run hash-password -- mypassword
 {
   "users": [
     {
-      "username": "string (required)",
-      "passwordHash": "string (bcrypt hash, required)",
-      "settings": {
-        "role": "string (optional)",
-        "features": "string[] (optional)",
-        "...": "any custom fields"
-      }
+      "username": "string (required, unique)",
+      "passwordHash": "string (required, bcrypt)",
+      "role": "'admin' | 'user' (required)"
     }
   ]
 }
 ```
 
-## Feature Definitions
+## Role Behavior
 
-Standard features to support:
+| Role | Permissions |
+|------|-------------|
+| admin | Full access to everything |
+| user | Basic search and view access |
 
-| Feature | Description |
-|---------|-------------|
-| `download` | Can download torrent files |
-| `settings` | Can access settings page |
-| `mcp` | Can use MCP tools |
+Check in code with simple conditions:
+
+```typescript
+if (user.role === 'admin') {
+  // Allow action
+}
+```
+
+## Anonymous Mode
+
+When `ALLOW_ANONYMOUS=true` in `.env`:
+- JWT guard returns `true` immediately
+- Frontend skips login page
+- All requests bypass authentication
 
 ## Security Considerations
 
-- `users.json` should be in `.gitignore` for production
+- `users.json` in `.gitignore`
 - Provide `users.example.json` template
-- Password hashes use bcrypt with cost factor 10
+- Bcrypt cost factor 10
+- Server crashes on invalid JSON to prevent silent failures
 
 ## File Location
 
-Place `users.json` in project root or `config/` directory:
-- Path configurable via `USERS_CONFIG_PATH` env var
-- Default: `./config/users.json`
+Default: `./config/users.json`  
+Override with env var: `USERS_CONFIG_PATH=/path/to/users.json`

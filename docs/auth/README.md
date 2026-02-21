@@ -1,19 +1,16 @@
-# Auth with Account Settings
+# Auth System
 
 ## Overview
 
-Implementation of JWT-based authentication with user-specific settings and feature flags for the rt-mcp project.
+JWT authentication for a home project with 2-3 users. Role-based access control.
 
 ## Requirements
 
 - User login with username/password
-- JWT with configurable expiration and claims
-- Configurable list of allowed users
-- Per-user custom server settings (JSON)
-- Custom JWT token claims based on user settings
-- Frontend feature customization via JWT claims
-- Frontend query endpoint for user features
-- Optional anonymous login via ENV var with built-in "anonymous" user settings
+- JWT with 2h expiration
+- JSON file for user storage (no database)
+- Role-based permissions (admin vs user)
+- Optional anonymous mode (skip auth entirely via env var)
 
 ## Architecture
 
@@ -21,31 +18,31 @@ Implementation of JWT-based authentication with user-specific settings and featu
 flowchart TB
     subgraph Frontend
         Login[Login Page]
-        App[App - Protected Routes]
-        FeatureStore[Feature Store]
+        App[Main App]
+        Store[Auth Store - Zustand]
     end
     
     subgraph Backend
         AuthController[Auth Controller]
         AuthService[Auth Service]
         JwtStrategy[JWT Strategy]
-        UsersController[Users Controller]
+        JwtGuard[JWT Guard]
     end
     
     subgraph Config
-        UsersConfig[users.json]
+        UsersJSON[users.json]
+        Env[.env - ALLOW_ANONYMOUS]
     end
     
     Login -->|POST /auth/login| AuthController
     AuthController -->|validate| AuthService
-    AuthService -->|read| UsersConfig
+    AuthService -->|read| UsersJSON
     AuthService -->|generate JWT| JwtStrategy
     
-    App -->|Authorization: Bearer| Backend
-    FeatureStore -->|GET /auth/features| UsersController
+    App -->|Authorization: Bearer token| Backend
+    App -->|GET /auth/me| AuthController
     
-    JwtStrategy -->|inject claims| AuthService
-    AuthService -->|user settings as claims| JwtStrategy
+    JwtGuard -->|bypass if ALLOW_ANONYMOUS| Env
 ```
 
 ## Implementation Order
@@ -54,57 +51,54 @@ flowchart TB
 |---|------|----------|
 | 1 | JWT Auth Backend | [001-jwt-auth-backend.md](./001-jwt-auth-backend.md) |
 | 2 | User Configuration | [002-user-configuration.md](./002-user-configuration.md) |
-| 3 | Frontend Auth Integration | [003-frontend-auth.md](./003-frontend-auth.md) |
-| 4 | Feature Flags System | [004-feature-flags.md](./004-feature-flags.md) |
+| 3 | Frontend Auth | [003-frontend-auth.md](./003-frontend-auth.md) |
+| 4 | Role-Based Permissions | [004-feature-flags.md](./004-feature-flags.md) |
 
 ## Tech Stack
 
 - Backend: `@nestjs/jwt`, `@nestjs/passport`, `passport-jwt`, `bcrypt`
-- Frontend: React Context + Zustand for auth state
-- Config: JSON file for user storage (simple, no database needed)
+- Frontend: Zustand for auth state
+- Config: JSON file for users
 
-## Configuration Structure
+## User Structure
 
 ```json
 {
-  "jwt": {
-    "secret": "your-secret-key",
-    "expiresIn": "24h"
-  },
   "users": [
     {
       "username": "admin",
       "passwordHash": "$2b$10$...",
-      "settings": {
-        "role": "admin",
-        "features": ["search", "download", "settings"]
-      }
+      "role": "admin"
+    },
+    {
+      "username": "user",
+      "passwordHash": "$2b$10$...",
+      "role": "user"
     }
   ]
 }
 ```
 
-## Anonymous Login
+## Anonymous Mode
 
-When `ALLOW_ANONYMOUS=true` in environment:
-- No login required - frontend skips login form
-- Uses built-in "anonymous" user with its settings
-- Anonymous user must be defined in `users.json`
-- Useful for development or trusted networks
+When `ALLOW_ANONYMOUS=true`:
+- Auth guard returns `true` immediately (no JWT validation)
+- Frontend skips login page
+- Useful for development or trusted home networks
+- No fake users or tokens needed
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/login` | Login with username/password |
-| POST | `/auth/anonymous` | Get token for anonymous user (if enabled) |
-| GET | `/auth/me` | Get current user info |
-| GET | `/auth/features` | Get user features list |
-| GET | `/auth/config` | Get auth config (anonymous allowed, etc.) |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/auth/login` | No | Login, returns JWT + user object |
+| GET | `/auth/me` | Yes | Get current user info |
+| GET | `/auth/config` | No | Get auth config (allowAnonymous flag) |
 
 ## Security Notes
 
-- Passwords stored as bcrypt hashes
-- JWT secret from environment variable
-- Token expiration configurable
-- No refresh tokens (keep it simple for home project)
+- Passwords: bcrypt with cost 10
+- JWT: 7d expiration
+- Rate limiting: 5 login attempts per 5 minutes
+- Token in localStorage
+- No refresh tokens

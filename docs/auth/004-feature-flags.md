@@ -1,151 +1,162 @@
-# Task 4: Feature Flags System
+# Task 4: Role-Based Permissions
 
 ## Goal
 
-Implement feature flags that control frontend UI elements based on user permissions from JWT claims.
+Role-based access control using user roles.
 
 ## How It Works
 
-1. User logs in → JWT contains `features` array in claims
-2. Frontend stores features from token
-3. UI components check features to show/hide elements
-4. Backend can also validate features for API access
+- Users have a `role` field: `'admin'` or `'user'`
+- Components check role with simple conditionals
+- Backend can check role from JWT payload if needed
 
-## Implementation Steps
+## Frontend: Role Checks
 
-### 1. Define Standard Features
+### Direct Check in Components
 
-| Feature | UI Impact |
-|---------|-----------|
-| `download` | Show download button |
-| `settings` | Show settings page/menu |
+```tsx
+import { useAuthStore } from '../../store/authStore'
 
-### 2. Backend: Feature Guard
+export function ResultsTable() {
+  const user = useAuthStore(state => state.user)
 
-Create `FeaturesGuard` for protecting routes:
-
-```typescript
-@RequireFeatures('download')
-@Get('download/:id')
-async download(@Param('id') id: string) {
-  // Only users with 'download' feature can access
+  return (
+    <div>
+      {/* Admin-only button */}
+      {user?.role === 'admin' && (
+        <Button>Download</Button>
+      )}
+      
+      {/* Everyone */}
+      <SearchResults />
+    </div>
+  )
 }
 ```
 
-### 3. Frontend: Feature Hook
+### Helper Hook (Optional)
 
-`frontend/src/hooks/useFeature.ts`:
+If you want to extract the logic:
+
+`frontend/src/hooks/useRole.ts`:
 
 ```typescript
-function useFeature(feature: string): boolean {
-  const { user } = useAuth()
-  return user?.features?.includes(feature) ?? false
+import { useAuthStore } from '../store/authStore'
+
+export function useRole() {
+  const user = useAuthStore(state => state.user)
+  
+  return {
+    isAdmin: user?.role === 'admin',
+    isUser: user?.role === 'user',
+    role: user?.role,
+  }
 }
 
 // Usage
-const canDownload = useFeature('download')
+const { isAdmin } = useRole()
+if (isAdmin) {
+  // Show admin features
+}
 ```
 
-### 4. Frontend: Feature Component
+## Backend: Role Guards (Optional)
 
-`frontend/src/components/auth/FeatureGate.tsx`:
+If you need to protect specific routes:
 
-```tsx
-interface FeatureGateProps {
-  feature: string
-  children: React.ReactNode
-  fallback?: React.ReactNode
+`src/auth/guards/role.guard.ts`:
+
+```typescript
+@Injectable()
+export class RoleGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRole = this.reflector.get<string>('role', context.getHandler())
+    if (!requiredRole) {
+      return true
+    }
+
+    const request = context.switchToHttp().getRequest()
+    const user = request.user
+    
+    return user?.role === requiredRole
+  }
 }
+```
 
-function FeatureGate({ feature, children, fallback }: FeatureGateProps) {
-  const hasFeature = useFeature(feature)
-  return hasFeature ? <>{children}</> : <>{fallback}</>
-}
+`src/auth/decorators/role.decorator.ts`:
+
+```typescript
+export const RequireRole = (role: string) => SetMetadata('role', role)
 
 // Usage
-<FeatureGate feature="download">
-  <DownloadButton />
-</FeatureGate>
-```
-
-### 5. Apply to Existing Components
-
-Update components to use feature gates:
-
-**ResultsTable.tsx:**
-```tsx
-<FeatureGate feature="download">
-  <DownloadButton />
-</FeatureGate>
-```
-
-**Header.tsx:**
-```tsx
-<FeatureGate feature="settings">
-  <SettingsLink />
-</FeatureGate>
-```
-
-### 6. Backend: Features Endpoint
-
-`GET /auth/features` returns:
-
-```json
-{
-  "features": ["search", "download", "settings"],
+@RequireRole('admin')
+@Get('admin-only')
+adminEndpoint() {
+  // Only accessible by admin
 }
 ```
 
-This allows frontend to know all available features for UI purposes.
+For simple use cases, you can check `req.user.role === 'admin'` directly in the controller.
 
-## Feature Check Flow
+## Permission Matrix
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant F as Frontend
-    participant B as Backend
-    
-    U->>F: Login
-    F->>B: POST /auth/login
-    B->>F: JWT with features claim
-    F->>F: Store features
-    F->>U: Show UI based on features
-    
-    Note over F: User clicks download
-    F->>F: Check hasFeature - download
-    F->>B: GET /download/:id
-    B->>B: Validate feature in JWT
-    B->>F: Return data or 403
+| Feature | Admin | User |
+|---------|-------|------|
+| Search | ✓ | ✓ |
+| View results | ✓ | ✓ |
+| Download torrents | ✓ | ✗ |
+| Access settings | ✓ | ✗ |
+| Use MCP tools | ✓ | ✗ |
+
+Adjust based on your needs. This is just an example.
+
+## Example Updates
+
+### Header.tsx
+
+```tsx
+export function Header() {
+  const { user, logout } = useAuthStore()
+
+  return (
+    <header>
+      <nav>
+        <Link to="/">Search</Link>
+        {user?.role === 'admin' && (
+          <Link to="/settings">Settings</Link>
+        )}
+      </nav>
+      <Button onClick={logout}>Logout</Button>
+    </header>
+  )
+}
 ```
 
-## Default Features by Role
+### ResultCard.tsx or ResultsTable.tsx
 
-| Role | Features |
-|------|----------|
-| admin | All features |
-| user | download, settings |
+```tsx
+export function ResultCard({ result }) {
+  const { isAdmin } = useRole()
 
-## Files to Create/Modify
-
-```
-src/
-└── auth/
-    ├── decorators/
-    │   └── require-features.decorator.ts
-    └── guards/
-        └── features.guard.ts
-
-frontend/src/
-├── hooks/
-│   └── useFeature.ts
-└── components/
-    └── auth/
-        └── FeatureGate.tsx
+  return (
+    <div>
+      <h3>{result.title}</h3>
+      {isAdmin && (
+        <Button onClick={() => downloadTorrent(result.id)}>
+          Download
+        </Button>
+      )}
+    </div>
+  )
+}
 ```
 
-## Testing
+## Summary
 
-- Test feature gate shows/hides elements
-- Test API returns 403 for missing features
-- Test different user roles
+Role checks are straightforward:
+
+```tsx
+{user?.role === 'admin' && <AdminFeature />}
+```
