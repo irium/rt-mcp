@@ -78,6 +78,15 @@ function App() {
     }
   }
 
+  const handleDownloadFileClick = async (id: string) => {
+    try {
+      await rutrackerService.downloadTorrentFile(id)
+      toast.success('Torrent file download started')
+    } catch (error) {
+      toast.error('Failed to download torrent file')
+    }
+  }
+
   // Show loading state while checking auth
   if (isLoading) {
     return (
@@ -112,6 +121,7 @@ function App() {
               onMagnetClick={handleMagnetClick}
               onDetailsClick={handleDetailsClick}
               onDownloadClick={handleDownloadClick}
+              onDownloadFileClick={handleDownloadFileClick}
             />
           </div>
 

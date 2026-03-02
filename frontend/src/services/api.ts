@@ -107,4 +107,29 @@ export const api = {
     fetchApi<T>(endpoint, {
       method: 'DELETE',
     }),
+
+  /**
+   * GET request that returns a Blob (for file downloads)
+   */
+  getBlob: async (endpoint: string): Promise<Blob> => {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'GET',
+      headers: {
+        ...getAuthHeader(),
+      },
+    })
+
+    if (response.status === 401) {
+      handleUnauthorized()
+    }
+
+    if (!response.ok) {
+      throw new ApiError(
+        `Failed to download: ${response.statusText}`,
+        response.status
+      )
+    }
+
+    return response.blob()
+  },
 }

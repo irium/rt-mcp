@@ -1,5 +1,5 @@
 import type { SearchResult } from '@/types/rutracker'
-import { Magnet, Info, Download } from 'lucide-react'
+import { Magnet, Info, CloudDownload, Download } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { formatSize, formatETA } from '@/utils/format'
 import { parseQuality, getQualityBadge } from '@/utils/parseQuality'
@@ -11,6 +11,7 @@ interface ResultCardProps {
   onMagnetClick: (id: string) => void
   onDetailsClick: (id: string) => void
   onDownloadClick: (id: string, name: string) => void
+  onDownloadFileClick: (id: string) => void
 }
 
 export function ResultCard({
@@ -18,6 +19,7 @@ export function ResultCard({
   onMagnetClick,
   onDetailsClick,
   onDownloadClick,
+  onDownloadFileClick,
 }: ResultCardProps) {
   const quality = parseQuality(result.name)
   const badge = getQualityBadge(quality)
@@ -129,11 +131,24 @@ export function ResultCard({
               'focus:outline-none'
             )}
             onClick={() => onDownloadClick(result.id, result.name)}
-            title="Download Torrent"
+            title="Download Torrent to Server"
           >
-            <Download className="h-4 w-4" />
+            <CloudDownload className="h-4 w-4" />
           </Button>
         </RoleGuard>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            'flex-1 p-2 rounded-lg transition-colors duration-200',
+            'hover:bg-gray-200 dark:hover:bg-gray-700',
+            'focus:outline-none'
+          )}
+          onClick={() => onDownloadFileClick(result.id)}
+          title="Download .torrent File"
+        >
+          <Download className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   )
