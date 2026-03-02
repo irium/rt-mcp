@@ -536,4 +536,73 @@ export class RutrackerService extends BaseTorrentTrackerService {
       }
     });
   }
+
+  /**
+   * Download .torrent file content as buffer
+   * @param topicId Topic ID of the torrent
+   * @returns Promise with buffer
+   */
+  async downloadTorrentContent(topicId: string): Promise<Buffer> {
+    console.log(`Getting torrent content for topic ID: ${topicId}`);
+
+    return this.retryWithBackoff(async () => {
+      try {
+        // Ensure we are logged in
+        if (!this.isLoggedIn) {
+          console.log('Not logged in, attempting to login before getting torrent content');
+          const loginSuccess = await this.login();
+          if (!loginSuccess) {
+            throw new Error('Failed to login to RuTracker, cannot get torrent content');
+          }
+        }
+
+        // 1. Получаем HTML темы и form_token
+        const topicUrl = `viewtopic.php?t=${topicId}`;
+        const topicResponse = await this.visit(topicUrl);
+        const formToken = this.extractFormToken(topicResponse.body);
+        if (!formToken) {
+          throw new Error('form_token not found in topic page HTML');
+        }
+
+        // 2. Делаем POST-запрос на скачивание с form_token
+        const downloadUrl = `dl.php?t=${topicId}`;
+        const formData = new URLSearchParams();
+        formData.append('form_token', formToken);
+
+        console.log(
+          `Sending POST request to download URL: ${this.baseUrl}${downloadUrl} with form_token`,
+        );
+
+        const response = await this.visit(downloadUrl, {
+          method: 'POST',
+          data: formData,
+          isBinary: true,
+          allowRedirects: true,
+          checkSession: true,
+        });
+
+        // Make sure the response is a torrent file
+        const isTorrentFile =
+          Buffer.isBuffer(response.body) && response.body.length > 100 && response.body[0] === 100; // 'd' in ASCII is 100
+
+        if (!isTorrentFile) {
+          console.error(
+            'Response does not appear to be a valid torrent file: \n',
+            response.body.toString(),
+          );
+          throw new Error('Failed to download valid torrent file');
+        }
+
+        // Generate filename
+        const filename = `${topicId}.torrent`;
+
+        console.log(`Successfully retrieved torrent content: ${filename}`);
+
+        return response.body;
+      } catch (error) {
+        console.error(`Error getting torrent content for topic ${topicId}:`, error.message);
+        throw new Error(`Failed to get torrent content: ${error.message}`);
+      }
+    });
+  }
 }

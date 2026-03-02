@@ -8,6 +8,7 @@ import {
   HttpException,
   HttpStatus,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { RutrackerService } from './rutracker.service';
 import { ConfigService } from '@nestjs/config';
@@ -141,4 +142,34 @@ export class RutrackerController {
       isLoggedIn: this.rutrackerService.getLoginStatus(),
     };
   }
+
+  @Get('download-content/:torrentId')
+  async downloadContent(@Param('torrentId') torrentId: string, @Res() res: any) {
+    try {
+      if (!this.rutrackerService.getLoginStatus()) {
+        await this.rutrackerService.login();
+      }
+
+      const buffer = await this.rutrackerService.downloadTorrentContent(torrentId);
+
+      // Derive filename from torrentId
+      const filename = `${torrentId}.torrent`;
+
+      // Set headers for file download
+      res.set({
+        'Content-Type': 'application/x-bittorrent',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': buffer.length,
+      });
+
+      // Send the buffer directly
+      res.send(buffer);
+    } catch (error) {
+      throw new HttpException(
+        `Error downloading torrent content: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
 }
