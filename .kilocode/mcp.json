@@ -1,11 +1,15 @@
 {
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp@0.0.38"
-      ]
+    "mcpServers": {
+        "playwright": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@playwright/mcp@0.0.38"
+            ],
+            "alwaysAllow": [
+                "browser_click",
+                "browser_fill_form"
+            ]
+        }
     }
-  }
 }

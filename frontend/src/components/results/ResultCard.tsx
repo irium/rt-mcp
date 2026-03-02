@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { formatSize, formatETA } from '@/utils/format'
 import { parseQuality, getQualityBadge } from '@/utils/parseQuality'
 import { cn } from '@/utils/cn'
+import { RoleGuard } from '@/components/auth/RoleGuard'
 
 interface ResultCardProps {
   result: SearchResult
@@ -118,20 +119,21 @@ export function ResultCard({
         >
           <Info className="h-4 w-4" />
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            'opacity-50 cursor-not-allowed pointer-events-none', // Disabled
-            'flex-1 p-2 rounded-lg transition-colors duration-200',
-            'hover:bg-gray-200 dark:hover:bg-gray-700',
-            'focus:outline-none'
-          )}
-          onClick={() => onDownloadClick(result.id, result.name)}
-          title="Download Torrent"
-        >
-          <Download className="h-4 w-4" />
-        </Button>
+        <RoleGuard requireAdmin>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              'flex-1 p-2 rounded-lg transition-colors duration-200',
+              'hover:bg-gray-200 dark:hover:bg-gray-700',
+              'focus:outline-none'
+            )}
+            onClick={() => onDownloadClick(result.id, result.name)}
+            title="Download Torrent"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+        </RoleGuard>
       </div>
     </div>
   )

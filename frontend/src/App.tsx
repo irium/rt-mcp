@@ -5,8 +5,10 @@ import { SearchForm } from './components/search/SearchForm'
 import { FilterPanel } from './components/search/FilterPanel'
 import { ResultsTable } from './components/results/ResultsTable'
 import { DetailsModal } from './components/modals/DetailsModal'
+import { LoginForm } from './components/auth/LoginForm'
 import { useThemeStore } from './store/themeStore'
 import { useFilterStore } from './store/filterStore'
+import { useAuthStore } from './store/authStore'
 import { rutrackerService } from './services/rutracker'
 import type { SearchResult } from './types/rutracker'
 import { copyToClipboard } from './utils/copyToClipboard'
@@ -15,15 +17,25 @@ import './App.css'
 function App() {
   const initializeTheme = useThemeStore((state) => state.initializeTheme)
   const hdVideoOnly = useFilterStore((state) => state.hdVideoOnly)
+  const { 
+    isAuthenticated, 
+    isLoading, 
+    allowAnonymous, 
+    checkAuth, 
+    checkAnonymousMode 
+  } = useAuthStore()
+  
   const [results, setResults] = useState<SearchResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
   const [selectedTorrent, setSelectedTorrent] = useState<SearchResult | null>(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
 
-  // Initialize theme on mount
+  // Initialize theme and auth on mount
   useEffect(() => {
     initializeTheme()
-  }, [initializeTheme])
+    checkAnonymousMode()
+    checkAuth()
+  }, [initializeTheme, checkAnonymousMode, checkAuth])
 
   const handleSearchSuccess = (searchResults: SearchResult[]) => {
     setResults(searchResults)
@@ -64,6 +76,20 @@ function App() {
     } catch (error) {
       toast.error('Failed to download torrent')
     }
+  }
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-gray-600 dark:text-gray-400">Loading...</div>
+      </div>
+    )
+  }
+
+  // Show login form if not authenticated and anonymous mode is disabled
+  if (!isAuthenticated && !allowAnonymous) {
+    return <LoginForm />
   }
 
   return (

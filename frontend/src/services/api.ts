@@ -1,3 +1,5 @@
+import { useAuthStore } from '../store/authStore'
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/rutracker'
 
 /**
@@ -20,7 +22,26 @@ export class ApiError extends Error {
 }
 
 /**
- * Generic fetch wrapper with error handling
+ * Get the authorization header if token exists
+ */
+function getAuthHeader(): Record<string, string> {
+  const token = useAuthStore.getState().token
+  if (token) {
+    return { Authorization: `Bearer ${token}` }
+  }
+  return {}
+}
+
+/**
+ * Handle 401 responses by clearing auth state
+ */
+function handleUnauthorized(): void {
+  const { logout } = useAuthStore.getState()
+  logout()
+}
+
+/**
+ * Generic fetch wrapper with error handling and auth
  */
 async function fetchApi<T>(
   endpoint: string,
@@ -30,10 +51,15 @@ async function fetchApi<T>(
     const response = await fetch(`${API_BASE}${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeader(),
         ...options?.headers,
       },
       ...options,
     })
+
+    if (response.status === 401) {
+      handleUnauthorized()
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null)
@@ -49,7 +75,7 @@ async function fetchApi<T>(
     if (error instanceof ApiError) {
       throw error
     }
-    
+
     // Network error
     throw new ApiError(
       'Network error. Please check your connection.',
@@ -64,10 +90,21 @@ async function fetchApi<T>(
  */
 export const api = {
   get: <T>(endpoint: string) => fetchApi<T>(endpoint),
-  
+
   post: <T>(endpoint: string, data?: unknown) =>
     fetchApi<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
+    }),
+
+  put: <T>(endpoint: string, data?: unknown) =>
+    fetchApi<T>(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  delete: <T>(endpoint: string) =>
+    fetchApi<T>(endpoint, {
+      method: 'DELETE',
     }),
 }
