@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "passwordHash": "$2b$10$example-hash-replace-with-actual-hash",
+      "role": "admin"
+    },
+    {
+      "username": "user",
+      "passwordHash": "$2b$10$example-hash-replace-with-actual-hash",
+      "role": "user"
+    }
+  ]
+}

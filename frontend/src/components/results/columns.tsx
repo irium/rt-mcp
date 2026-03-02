@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { formatSize, formatETA } from '@/utils/format'
 import { parseQuality, getQualityBadge } from '@/utils/parseQuality'
 import { cn } from '../../utils/cn'
+import { RoleGuard } from '@/components/auth/RoleGuard'
 
 /**
  * Column definitions for the results table
@@ -179,26 +180,27 @@ export const columns: ColumnDef<SearchResult>[] = [
           >
             <Info className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              'opacity-50 cursor-not-allowed pointer-events-none', // Disabled
-              'p-2 rounded-lg transition-colors duration-200',
-              'hover:bg-gray-200 dark:hover:bg-gray-700',
-              'focus:outline-none'
-            )}            
-            onClick={() => {
-              // This will be handled by the parent component
-              const event = new CustomEvent('download-click', {
-                detail: { id: result.id, name: result.name },
-              })
-              window.dispatchEvent(event)
-            }}
-            title="Download Torrent"
-          >
-            <Download className="h-4 w-4" />
-          </Button>
+          <RoleGuard requireAdmin>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'p-2 rounded-lg transition-colors duration-200',
+                'hover:bg-gray-200 dark:hover:bg-gray-700',
+                'focus:outline-none'
+              )}            
+              onClick={() => {
+                // This will be handled by the parent component
+                const event = new CustomEvent('download-click', {
+                  detail: { id: result.id, name: result.name },
+                })
+                window.dispatchEvent(event)
+              }}
+              title="Download Torrent"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </RoleGuard>
         </div>
       )
     },
