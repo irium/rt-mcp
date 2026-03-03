@@ -20,8 +20,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-    const allowAnonymous = this.configService.get<string>(
-      'ALLOW_ANONYMOUS',
+    const singleUserMode = this.configService.get<string>(
+      'SINGLE_USER_MODE',
       'false',
     );
 
@@ -31,8 +31,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getClass(),
     ]);
 
-    // Allow access if anonymous mode is enabled or route is public
-    if (allowAnonymous === 'true' || isPublic) {
+    // Allow access if single user mode is enabled or route is public
+    if (singleUserMode === 'true' || isPublic) {
       return true;
     }
 
@@ -45,16 +45,16 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     info: Error | undefined,
     context: ExecutionContext,
   ): TUser {
-    const allowAnonymous = this.configService.get<string>(
-      'ALLOW_ANONYMOUS',
+    const singleUserMode = this.configService.get<string>(
+      'SINGLE_USER_MODE',
       'false',
     );
 
-    // In anonymous mode, return a default user if no valid token
-    if (allowAnonymous === 'true') {
+    // In single user mode, return a default admin user if no valid token
+    if (singleUserMode === 'true') {
       if (err || !user) {
         return {
-          username: 'anonymous',
+          username: 'admin',
           passwordHash: '',
           role: 'admin',
         } as TUser;
@@ -62,7 +62,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return user;
     }
 
-    // For non-anonymous mode, require valid authentication
+    // For multi-user mode, require valid authentication
     if (err || !user) {
       throw (
         err ||

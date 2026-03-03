@@ -221,9 +221,9 @@ import { Layout } from './components/layout/Layout'
 export function App() {
   const { isAuthenticated, checkAuth } = useAuthStore()
 
-  // Check if ALLOW_ANONYMOUS on app load
+  // Check if SINGLE_USER_MODE on app load
   useEffect(() => {
-    // Try to restore session from token
+    // Try to restore session from Token
     checkAuth()
   }, [checkAuth])
 
@@ -283,9 +283,9 @@ export function SomeComponent() {
 }
 ```
 
-### 7. Anonymous Mode Support
+### 7. Single User Mode Support
 
-Frontend needs to check if anonymous mode is enabled:
+Frontend needs to check if single user mode is enabled:
 
 ```typescript
 // In App.tsx
@@ -294,16 +294,16 @@ useEffect(() => {
     // Try to restore token first
     await checkAuth()
     
-    // If no token, check if anonymous allowed
+    // If no token, check if single user mode is enabled
     if (!useAuthStore.getState().isAuthenticated) {
       const response = await fetch('/api/auth/config')
-      const { allowAnonymous } = await response.json()
+      const { singleUserMode } = await response.json()
       
-      if (allowAnonymous) {
+      if (singleUserMode) {
         // Skip login, mark as authenticated with admin role
         useAuthStore.setState({ 
           isAuthenticated: true,
-          user: { username: 'anonymous', role: 'admin' }
+          user: { username: 'admin', role: 'admin' }
         })
       }
     }
@@ -313,7 +313,7 @@ useEffect(() => {
 }, [])
 ```
 
-Backend `JwtAuthGuard` returns `true` immediately when `ALLOW_ANONYMOUS=true`, so requests work without tokens.
+Backend `JwtAuthGuard` returns `true` immediately when `SINGLE_USER_MODE=true`, so requests work without tokens.
 
 ## UI Flow
 

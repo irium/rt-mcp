@@ -18,7 +18,7 @@ export class RolesGuard implements CanActivate {
     
     const { user } = context.switchToHttp().getRequest();
     
-    // If anonymous mode and no user, deny access to role-protected routes
+    // If single user mode and no user, deny access to role-protected routes
     if (!user) {
       throw new ForbiddenException('Access denied. Authentication required.');
     }

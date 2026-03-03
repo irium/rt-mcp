@@ -132,9 +132,9 @@ export class AuthController {
 
   @Public()
   @Get('config')
-  getAuthConfig(): { allowAnonymous: boolean } {
-    const allowAnonymous =
-      this.configService.get<string>('ALLOW_ANONYMOUS', 'false') === 'true';
-    return { allowAnonymous };
+  getAuthConfig(): { singleUserMode: boolean } {
+    const singleUserMode =
+      this.configService.get<string>('SINGLE_USER_MODE', 'false') === 'true';
+    return { singleUserMode };
   }
 }

@@ -167,9 +167,9 @@ if (user.role === 'admin') {
 }
 ```
 
-## Anonymous Mode
+## Single User Mode
 
-When `ALLOW_ANONYMOUS=true` in `.env`:
+When `SINGLE_USER_MODE=true` in `.env`:
 - JWT guard returns `true` immediately
 - Frontend skips login page
 - All requests bypass authentication

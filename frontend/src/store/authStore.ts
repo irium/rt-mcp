@@ -11,13 +11,13 @@ export interface AuthState {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  allowAnonymous: boolean
+  singleUserMode: boolean
 
   // Actions
   setAuth: (token: string, user: User) => void
   logout: () => void
   checkAuth: () => Promise<void>
-  checkAnonymousMode: () => Promise<void>
+  checkSingleUserMode: () => Promise<void>
   login: (username: string, password: string) => Promise<void>
 }
 
@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       isLoading: true,
-      allowAnonymous: false,
+      singleUserMode: false,
 
       setAuth: (token, user) => set({ token, user, isAuthenticated: true }),
 
@@ -58,13 +58,13 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      checkAnonymousMode: async () => {
+      checkSingleUserMode: async () => {
         try {
           const response = await fetch('/api/auth/config')
-          const { allowAnonymous } = await response.json()
-          set({ allowAnonymous })
+          const { singleUserMode } = await response.json()
+          set({ singleUserMode })
         } catch {
-          set({ allowAnonymous: false })
+          set({ singleUserMode: false })
         }
       },
 

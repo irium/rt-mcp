@@ -141,9 +141,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: ExecutionContext) {
-    // Allow anonymous mode - bypass auth entirely
-    const allowAnonymous = this.configService.get<string>('ALLOW_ANONYMOUS') === 'true'
-    if (allowAnonymous) {
+    // Single user mode - bypass auth entirely
+    const singleUserMode = this.configService.get<string>('SINGLE_USER_MODE') === 'true'
+    if (singleUserMode) {
       return true
     }
 
@@ -183,8 +183,8 @@ export class AuthController {
 
   @Get('config')
   getConfig() {
-    const allowAnonymous = this.configService.get<string>('ALLOW_ANONYMOUS') === 'true'
-    return { allowAnonymous }
+    const singleUserMode = this.configService.get<string>('SINGLE_USER_MODE') === 'true'
+    return { singleUserMode }
   }
 }
 ```
@@ -227,7 +227,7 @@ private checkRateLimit(username: string) {
 |--------|----------|------|-------------|
 | POST | `/auth/login` | No | Login with username/password |
 | GET | `/auth/me` | Yes | Get current user info |
-| GET | `/auth/config` | No | Get auth config (allowAnonymous) |
+| GET | `/auth/config` | No | Get auth config (singleUserMode) |
 
 ## Environment Variables
 
@@ -237,8 +237,8 @@ private checkRateLimit(username: string) {
 # JWT Configuration
 JWT_SECRET=your-secret-key-change-in-production
 
-# Anonymous Mode (skip auth entirely)
-ALLOW_ANONYMOUS=false
+# Single User Mode (skip auth entirely)
+SINGLE_USER_MODE=false
 ```
 
 ## JWT Payload Structure
@@ -257,5 +257,5 @@ ALLOW_ANONYMOUS=false
 
 - E2E test for login success/failure
 - Test rate limiting (6th attempt should fail)
-- Test JWT guard with and without ALLOW_ANONYMOUS
+- Test JWT guard with and without SINGLE_USER_MODE
 - Test /auth/me with valid/invalid tokens

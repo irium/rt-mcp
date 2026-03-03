@@ -20,9 +20,9 @@ function App() {
   const { 
     isAuthenticated, 
     isLoading, 
-    allowAnonymous, 
+    singleUserMode, 
     checkAuth, 
-    checkAnonymousMode 
+    checkSingleUserMode 
   } = useAuthStore()
   
   const [results, setResults] = useState<SearchResult[]>([])
@@ -33,9 +33,9 @@ function App() {
   // Initialize theme and auth on mount
   useEffect(() => {
     initializeTheme()
-    checkAnonymousMode()
+    checkSingleUserMode()
     checkAuth()
-  }, [initializeTheme, checkAnonymousMode, checkAuth])
+  }, [initializeTheme, checkSingleUserMode, checkAuth])
 
   const handleSearchSuccess = (searchResults: SearchResult[]) => {
     setResults(searchResults)
@@ -96,8 +96,8 @@ function App() {
     )
   }
 
-  // Show login form if not authenticated and anonymous mode is disabled
-  if (!isAuthenticated && !allowAnonymous) {
+  // Show login form if not authenticated and single user mode is disabled
+  if (!isAuthenticated && !singleUserMode) {
     return <LoginForm />
   }
 

@@ -9,7 +9,7 @@ export function LoginForm() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const login = useAuthStore((state) => state.login)
-  const allowAnonymous = useAuthStore((state) => state.allowAnonymous)
+  const singleUserMode = useAuthStore((state) => state.singleUserMode)
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault()
@@ -69,9 +69,9 @@ export function LoginForm() {
             {isSubmitting ? 'Signing in...' : 'Sign in'}
           </Button>
 
-          {allowAnonymous && (
+          {singleUserMode && (
             <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-              Anonymous access is enabled
+              Single user mode is enabled
             </p>
           )}
         </form>

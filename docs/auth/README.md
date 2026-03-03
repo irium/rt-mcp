@@ -10,7 +10,7 @@ JWT authentication for a home project with 2-3 users. Role-based access control.
 - JWT with 2h expiration
 - JSON file for user storage (no database)
 - Role-based permissions (admin vs user)
-- Optional anonymous mode (skip auth entirely via env var)
+- Optional single user mode (skip auth entirely via env var)
 
 ## Architecture
 
@@ -31,7 +31,7 @@ flowchart TB
     
     subgraph Config
         UsersJSON[users.json]
-        Env[.env - ALLOW_ANONYMOUS]
+        Env[.env - SINGLE_USER_MODE]
     end
     
     Login -->|POST /auth/login| AuthController
@@ -42,7 +42,7 @@ flowchart TB
     App -->|Authorization: Bearer token| Backend
     App -->|GET /auth/me| AuthController
     
-    JwtGuard -->|bypass if ALLOW_ANONYMOUS| Env
+    JwtGuard -->|bypass if SINGLE_USER_MODE| Env
 ```
 
 ## Implementation Order
@@ -81,7 +81,7 @@ flowchart TB
 
 ## Anonymous Mode
 
-When `ALLOW_ANONYMOUS=true`:
+When `SINGLE_USER_MODE=true`:
 - Auth guard returns `true` immediately (no JWT validation)
 - Frontend skips login page
 - Useful for development or trusted home networks
@@ -93,7 +93,7 @@ When `ALLOW_ANONYMOUS=true`:
 |--------|----------|------|-------------|
 | POST | `/auth/login` | No | Login, returns JWT + user object |
 | GET | `/auth/me` | Yes | Get current user info |
-| GET | `/auth/config` | No | Get auth config (allowAnonymous flag) |
+| GET | `/auth/config` | No | Get auth config (singleUserMode flag) |
 
 ## Security Notes
 
