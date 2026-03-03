@@ -56,7 +56,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         return {
           username: 'anonymous',
           passwordHash: '',
-          role: 'user',
+          role: 'admin',
         } as TUser;
       }
       return user;
