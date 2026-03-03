@@ -11,7 +11,7 @@ interface ResultCardProps {
   onMagnetClick: (id: string) => void
   onDetailsClick: (id: string) => void
   onDownloadClick: (id: string, name: string) => void
-  onDownloadFileClick: (id: string) => void
+  onDownloadFileClick: (id: string, name: string) => void
 }
 
 export function ResultCard({
@@ -144,7 +144,7 @@ export function ResultCard({
             'hover:bg-gray-200 dark:hover:bg-gray-700',
             'focus:outline-none'
           )}
-          onClick={() => onDownloadFileClick(result.id)}
+          onClick={() => onDownloadFileClick(result.id, result.name)}
           title="Download .torrent File"
         >
           <Download className="h-4 w-4" />

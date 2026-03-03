@@ -20,7 +20,7 @@ interface ResultsTableProps {
   onMagnetClick: (id: string) => void
   onDetailsClick: (id: string) => void
   onDownloadClick: (id: string, name: string) => void
-  onDownloadFileClick: (id: string) => void
+  onDownloadFileClick: (id: string, name: string) => void
 }
 
 export function ResultsTable({
@@ -52,7 +52,7 @@ export function ResultsTable({
 
     const handleDownloadFileClick = (e: Event) => {
       const customEvent = e as CustomEvent
-      onDownloadFileClick(customEvent.detail.id)
+      onDownloadFileClick(customEvent.detail.id, customEvent.detail.name)
     }
 
     window.addEventListener('magnet-click', handleMagnetClick)

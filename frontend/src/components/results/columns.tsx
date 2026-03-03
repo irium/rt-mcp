@@ -212,7 +212,7 @@ export const columns: ColumnDef<SearchResult>[] = [
             onClick={() => {
               // This will be handled by the parent component
               const event = new CustomEvent('download-file-click', {
-                detail: { id: result.id },
+                detail: { id: result.id, name: result.name },
               })
               window.dispatchEvent(event)
             }}

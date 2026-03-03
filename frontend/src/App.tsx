@@ -10,6 +10,8 @@ import { useThemeStore } from './store/themeStore'
 import { useFilterStore } from './store/filterStore'
 import { useAuthStore } from './store/authStore'
 import { rutrackerService } from './services/rutracker'
+import { useDownloadProgress } from './hooks/useDownloadProgress'
+import { DownloadProgressModal } from './components/modals/DownloadProgressModal'
 import type { SearchResult } from './types/rutracker'
 import { copyToClipboard } from './utils/copyToClipboard'
 import './App.css'
@@ -29,6 +31,11 @@ function App() {
   const [hasSearched, setHasSearched] = useState(false)
   const [selectedTorrent, setSelectedTorrent] = useState<SearchResult | null>(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const { 
+    startDownload,
+    endDownload,
+    DownloadProgressModalProps 
+  } = useDownloadProgress()
 
   // Initialize theme and auth on mount
   useEffect(() => {
@@ -70,19 +77,25 @@ function App() {
 
   const handleDownloadClick = async (id: string, name: string) => {
     try {
+      startDownload(id, name)
       const response = await rutrackerService.downloadTorrent(id)
+      endDownload()
       toast.success(`Downloading: ${name}`)
       console.log('Download response:', response)
     } catch (error) {
+      endDownload()
       toast.error('Failed to download torrent')
     }
   }
 
-  const handleDownloadFileClick = async (id: string) => {
+  const handleDownloadFileClick = async (id: string, name: string) => {
     try {
+      startDownload(id, name)
       await rutrackerService.downloadTorrentFile(id)
+      endDownload()
       toast.success('Torrent file download started')
     } catch (error) {
+      endDownload()
       toast.error('Failed to download torrent file')
     }
   }
@@ -133,6 +146,8 @@ function App() {
         onClose={() => setIsDetailsModalOpen(false)}
         torrent={selectedTorrent}
       />
+
+      <DownloadProgressModal {...DownloadProgressModalProps} />
 
       <Toaster
         position="bottom-center"
