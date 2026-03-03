@@ -5,9 +5,13 @@ import { SearchForm } from './components/search/SearchForm'
 import { FilterPanel } from './components/search/FilterPanel'
 import { ResultsTable } from './components/results/ResultsTable'
 import { DetailsModal } from './components/modals/DetailsModal'
+import { LoginForm } from './components/auth/LoginForm'
 import { useThemeStore } from './store/themeStore'
 import { useFilterStore } from './store/filterStore'
+import { useAuthStore } from './store/authStore'
 import { rutrackerService } from './services/rutracker'
+import { useDownloadProgress } from './hooks/useDownloadProgress'
+import { DownloadProgressModal } from './components/modals/DownloadProgressModal'
 import type { SearchResult } from './types/rutracker'
 import { copyToClipboard } from './utils/copyToClipboard'
 import './App.css'
@@ -15,15 +19,30 @@ import './App.css'
 function App() {
   const initializeTheme = useThemeStore((state) => state.initializeTheme)
   const hdVideoOnly = useFilterStore((state) => state.hdVideoOnly)
+  const { 
+    isAuthenticated, 
+    isLoading, 
+    singleUserMode, 
+    checkAuth, 
+    checkSingleUserMode 
+  } = useAuthStore()
+  
   const [results, setResults] = useState<SearchResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
   const [selectedTorrent, setSelectedTorrent] = useState<SearchResult | null>(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const { 
+    startDownload,
+    endDownload,
+    DownloadProgressModalProps 
+  } = useDownloadProgress()
 
-  // Initialize theme on mount
+  // Initialize theme and auth on mount
   useEffect(() => {
     initializeTheme()
-  }, [initializeTheme])
+    checkSingleUserMode()
+    checkAuth()
+  }, [initializeTheme, checkSingleUserMode, checkAuth])
 
   const handleSearchSuccess = (searchResults: SearchResult[]) => {
     setResults(searchResults)
@@ -58,12 +77,41 @@ function App() {
 
   const handleDownloadClick = async (id: string, name: string) => {
     try {
+      startDownload(id, name)
       const response = await rutrackerService.downloadTorrent(id)
+      endDownload()
       toast.success(`Downloading: ${name}`)
       console.log('Download response:', response)
     } catch (error) {
+      endDownload()
       toast.error('Failed to download torrent')
     }
+  }
+
+  const handleDownloadFileClick = async (id: string, name: string) => {
+    try {
+      startDownload(id, name)
+      await rutrackerService.downloadTorrentFile(id)
+      endDownload()
+      toast.success('Torrent file download started')
+    } catch (error) {
+      endDownload()
+      toast.error('Failed to download torrent file')
+    }
+  }
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-gray-600 dark:text-gray-400">Loading...</div>
+      </div>
+    )
+  }
+
+  // Show login form if not authenticated and single user mode is disabled
+  if (!isAuthenticated && !singleUserMode) {
+    return <LoginForm />
   }
 
   return (
@@ -86,6 +134,7 @@ function App() {
               onMagnetClick={handleMagnetClick}
               onDetailsClick={handleDetailsClick}
               onDownloadClick={handleDownloadClick}
+              onDownloadFileClick={handleDownloadFileClick}
             />
           </div>
 
@@ -97,6 +146,8 @@ function App() {
         onClose={() => setIsDetailsModalOpen(false)}
         torrent={selectedTorrent}
       />
+
+      <DownloadProgressModal {...DownloadProgressModalProps} />
 
       <Toaster
         position="bottom-center"

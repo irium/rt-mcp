@@ -20,6 +20,7 @@ interface ResultsTableProps {
   onMagnetClick: (id: string) => void
   onDetailsClick: (id: string) => void
   onDownloadClick: (id: string, name: string) => void
+  onDownloadFileClick: (id: string, name: string) => void
 }
 
 export function ResultsTable({
@@ -28,6 +29,7 @@ export function ResultsTable({
   onMagnetClick,
   onDetailsClick,
   onDownloadClick,
+  onDownloadFileClick,
 }: ResultsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
 
@@ -48,16 +50,23 @@ export function ResultsTable({
       onDownloadClick(customEvent.detail.id, customEvent.detail.name)
     }
 
+    const handleDownloadFileClick = (e: Event) => {
+      const customEvent = e as CustomEvent
+      onDownloadFileClick(customEvent.detail.id, customEvent.detail.name)
+    }
+
     window.addEventListener('magnet-click', handleMagnetClick)
     window.addEventListener('details-click', handleDetailsClick)
     window.addEventListener('download-click', handleDownloadClick)
+    window.addEventListener('download-file-click', handleDownloadFileClick)
 
     return () => {
       window.removeEventListener('magnet-click', handleMagnetClick)
       window.removeEventListener('details-click', handleDetailsClick)
       window.removeEventListener('download-click', handleDownloadClick)
+      window.removeEventListener('download-file-click', handleDownloadFileClick)
     }
-  }, [onMagnetClick, onDetailsClick, onDownloadClick])
+  }, [onMagnetClick, onDetailsClick, onDownloadClick, onDownloadFileClick])
 
   const table = useReactTable({
     data: results,
@@ -123,6 +132,7 @@ export function ResultsTable({
             onMagnetClick={onMagnetClick}
             onDetailsClick={onDetailsClick}
             onDownloadClick={onDownloadClick}
+            onDownloadFileClick={onDownloadFileClick}
           />
         ))}
       </div>

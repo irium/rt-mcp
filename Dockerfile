@@ -13,7 +13,7 @@ FROM node:20-alpine AS backend-builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci --ignore-scripts  --legacy-peer-deps
 
 COPY . .
 RUN npm run build
@@ -23,9 +23,10 @@ FROM node:20-alpine AS production
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev --ignore-scripts
+RUN npm ci --omit=dev --ignore-scripts --legacy-peer-deps
 
 COPY --from=backend-builder /app/dist ./dist
+COPY --from=backend-builder /app/config ./config
 COPY --from=frontend-builder /app/public ./public
 
 # Copy entrypoint script

@@ -34,10 +34,25 @@ export const rutrackerService = {
   },
 
   /**
-   * Download torrent file
+   * Download torrent file to server (requires admin)
    */
   downloadTorrent: async (torrentId: string): Promise<DownloadResponse> => {
     return api.post<DownloadResponse>(`/download/${torrentId}`)
+  },
+
+  /**
+   * Download torrent file directly to browser (for all authenticated users)
+   */
+  downloadTorrentFile: async (torrentId: string): Promise<void> => {
+    const blob = await api.getBlob(`/download-content/${torrentId}`)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${torrentId}.torrent`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
   },
 
   /**

@@ -19,5 +19,6 @@ export const CONFIG = {
   },
   APP: {
     PORT: 'PORT',
+    SINGLE_USER_MODE: 'SINGLE_USER_MODE',
   },
 };

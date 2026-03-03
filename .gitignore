@@ -63,3 +63,7 @@ rutracker.cookie
 torrents
 .cookie
 screenshots
+
+# User configuration (contains password hashes)
+config/users.json
+config/users.dev.json

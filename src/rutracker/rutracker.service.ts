@@ -194,7 +194,7 @@ export class RutrackerService extends BaseTorrentTrackerService {
         const encodedQuery = encodeURIComponent(query);
 
         // Calculate start parameter for pagination
-        const start = (page - 1) * this.RESULTS_PER_PAGE;
+        const start = (page - 1) * resultsPerPage;
 
         // Build search URL
         let searchUrl = `tracker.php?nm=${encodedQuery}`;
@@ -253,10 +253,7 @@ export class RutrackerService extends BaseTorrentTrackerService {
     // Create an array of promises for remaining pages
     const pagePromises = [];
     for (let i = 2; i <= totalPages; i++) {
-      const pageOptions = { ...options, page: i };
-      const nextPageResults = await this.search(pageOptions);
-      console.info(nextPageResults);
-      pagePromises.push(nextPageResults);
+      pagePromises.push(this.search({ ...options, page: i })); // ← push un-awaited promise
     }
 
     // Execute all promises concurrently
@@ -457,6 +454,61 @@ export class RutrackerService extends BaseTorrentTrackerService {
   }
 
   /**
+   * Shared logic: login check, topic page fetch, form token extraction, POST download, buffer validation.
+   * @param topicId Topic ID of the torrent
+   * @returns Promise with raw torrent Buffer
+   */
+  private async fetchTorrentBuffer(topicId: string): Promise<Buffer> {
+    // Ensure we are logged in
+    if (!this.isLoggedIn) {
+      console.log('Not logged in, attempting to login before downloading torrent file');
+      const loginSuccess = await this.login();
+      if (!loginSuccess) {
+        throw new Error('Failed to login to RuTracker, cannot download torrent file');
+      }
+    }
+
+    // 1. Получаем HTML темы и form_token
+    const topicUrl = `viewtopic.php?t=${topicId}`;
+    const topicResponse = await this.visit(topicUrl);
+    const formToken = this.extractFormToken(topicResponse.body);
+    if (!formToken) {
+      throw new Error('form_token not found in topic page HTML');
+    }
+
+    // 2. Делаем POST-запрос на скачивание с form_token
+    const downloadUrl = `dl.php?t=${topicId}`;
+    const formData = new URLSearchParams();
+    formData.append('form_token', formToken);
+
+    console.log(
+      `Sending POST request to download URL: ${this.baseUrl}${downloadUrl} with form_token`,
+    );
+
+    const response = await this.visit(downloadUrl, {
+      method: 'POST',
+      data: formData,
+      isBinary: true,
+      allowRedirects: true,
+      checkSession: true,
+    });
+
+    // Make sure the response is a torrent file
+    const isTorrentFile =
+      Buffer.isBuffer(response.body) && response.body.length > 100 && response.body[0] === 100; // 'd' in ASCII is 100
+
+    if (!isTorrentFile) {
+      console.error(
+        'Response does not appear to be a valid torrent file: \n',
+        response.body.toString(),
+      );
+      throw new Error('Failed to download valid torrent file');
+    }
+
+    return response.body;
+  }
+
+  /**
    * Download .torrent file for a specific torrent with retry logic
    * @param topicId Topic ID of the torrent
    * @returns Promise with path to the downloaded torrent file
@@ -466,14 +518,7 @@ export class RutrackerService extends BaseTorrentTrackerService {
 
     return this.retryWithBackoff(async () => {
       try {
-        // Ensure we are logged in
-        if (!this.isLoggedIn) {
-          console.log('Not logged in, attempting to login before downloading torrent file');
-          const loginSuccess = await this.login();
-          if (!loginSuccess) {
-            throw new Error('Failed to login to RuTracker, cannot download torrent file');
-          }
-        }
+        const buffer = await this.fetchTorrentBuffer(topicId);
 
         // Create torrents directory if it doesn't exist
         if (!fs.existsSync(this.torrentFilesFolder)) {
@@ -481,51 +526,14 @@ export class RutrackerService extends BaseTorrentTrackerService {
           await fs.promises.mkdir(this.torrentFilesFolder, { recursive: true });
         }
 
-        // 1. Получаем HTML темы и form_token
-        const topicUrl = `viewtopic.php?t=${topicId}`;
-        const topicResponse = await this.visit(topicUrl);
-        const formToken = this.extractFormToken(topicResponse.body);
-        if (!formToken) {
-          throw new Error('form_token not found in topic page HTML');
-        }
-
-        // 2. Делаем POST-запрос на скачивание с form_token
-        const downloadUrl = `dl.php?t=${topicId}`;
-        const formData = new URLSearchParams();
-        formData.append('form_token', formToken);
-
-        console.log(
-          `Sending POST request to download URL: ${this.baseUrl}${downloadUrl} with form_token`,
-        );
-
-        const response = await this.visit(downloadUrl, {
-          method: 'POST',
-          data: formData,
-          isBinary: true,
-          allowRedirects: true,
-          checkSession: true,
-        });
-
-        // Make sure the response is a torrent file
-        const isTorrentFile =
-          Buffer.isBuffer(response.body) && response.body.length > 100 && response.body[0] === 100; // 'd' in ASCII is 100
-
-        if (!isTorrentFile) {
-          console.error(
-            'Response does not appear to be a valid torrent file: \n',
-            response.body.toString(),
-          );
-          throw new Error('Failed to download valid torrent file');
-        }
-
-        // Generate filename
+        // Generate filename and write to disk
         const filename = `${topicId}.torrent`;
         const filePath = path.join(this.torrentFilesFolder, filename);
 
         console.log(`Writing torrent file to: ${filePath}`);
 
         // Write the torrent file as raw binary data
-        await fs.promises.writeFile(filePath, response.body);
+        await fs.promises.writeFile(filePath, buffer);
 
         console.log(`Successfully downloaded torrent file: ${filename}`);
 
@@ -533,6 +541,26 @@ export class RutrackerService extends BaseTorrentTrackerService {
       } catch (error) {
         console.error(`Error downloading torrent file for topic ${topicId}:`, error.message);
         throw new Error(`Failed to download torrent file: ${error.message}`);
+      }
+    });
+  }
+
+  /**
+   * Download .torrent file content as buffer
+   * @param topicId Topic ID of the torrent
+   * @returns Promise with buffer
+   */
+  async downloadTorrentContent(topicId: string): Promise<Buffer> {
+    console.log(`Getting torrent content for topic ID: ${topicId}`);
+
+    return this.retryWithBackoff(async () => {
+      try {
+        const buffer = await this.fetchTorrentBuffer(topicId);
+        console.log(`Successfully retrieved torrent file content: ${topicId}.torrent`);
+        return buffer;
+      } catch (error) {
+        console.error(`Error getting torrent content for topic ${topicId}:`, error.message);
+        throw new Error(`Failed to get torrent file content: ${error.message}`);
       }
     });
   }
