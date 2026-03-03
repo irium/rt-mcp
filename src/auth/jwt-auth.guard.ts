@@ -50,16 +50,13 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       'false',
     );
 
-    // In single user mode, return a default admin user if no valid token
+    // In single user mode, return a default admin user with role
     if (singleUserMode === 'true') {
-      if (err || !user) {
-        return {
-          username: 'admin',
-          passwordHash: '',
-          role: 'admin',
-        } as TUser;
-      }
-      return user;
+      return {
+        username: 'admin',
+        passwordHash: '',
+        role: 'admin',
+      } as TUser;
     }
 
     // For multi-user mode, require valid authentication

@@ -1,10 +1,14 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private configService: ConfigService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
@@ -16,9 +20,18 @@ export class RolesGuard implements CanActivate {
       return true;
     }
     
+    // In single user mode, allow all authenticated users
+    const singleUserMode = this.configService.get<string>(
+      'SINGLE_USER_MODE',
+      'false',
+    );
+    
+    if (singleUserMode === 'true') {
+      return true;
+    }
+    
     const { user } = context.switchToHttp().getRequest();
     
-    // If single user mode and no user, deny access to role-protected routes
     if (!user) {
       throw new ForbiddenException('Access denied. Authentication required.');
     }
